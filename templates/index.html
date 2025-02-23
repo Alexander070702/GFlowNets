@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Understanding Generative Flow Networks (GFlowNets): A User's Perspective</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="{{ url_for('static', filename='comparison.js') }}"></script>
+  <script src="{{ url_for('static', filename='flow_conservation.js') }}"></script>
+  <script src="{{ url_for('static', filename='heatmap.js') }}"></script>
+  <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+  <script src="{{ url_for('static', filename='sankey.js') }}"></script>
+  <script src="{{ url_for('static', filename='arrow.js') }}"></script>
+  <script src="{{ url_for('static', filename='nav.js') }}"></script>
+
+</head>
+<body onload="initComparisonChart()">
+  <div id="particles-js"></div>
+
+  <header>
+    <div id="burger" class="burger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </header>
+  <h1>Understanding Generative Flow Networks (GFlowNets): A User perspective</h1>
+  <nav>
+    <!-- Navigation Menu (initially hidden) -->
+    <ul class="nav-menu">
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#comparison">Comparison: GFlowNets vs. Traditional Methods</a></li>
+      <li><a href="#theory">Theory and Core Concepts</a></li>
+      <li><a href="#flow-conservation-demo">Flow Conservation Example</a></li>
+      <li><a href="#sankey-simulator">Flow Balance Simulator</a></li>
+      <li><a href="#twoD-tutorial">2D Points Tutorial: GFlowNet Intuition</a></li>
+      <li><a href="#mathematical-foundations">Mathematical Foundations</a></li>
+      <li><a href="#tetris-demo">Interactive Tetris Demo: GFlowNet in Action</a></li>
+      <li><a href="#applications">Applications</a></li>
+    </ul>
+  </nav>
+  <!-- Sticky Down Arrow placed outside main -->
+  <div id="stickyArrow" class="sticky-arrow">
+    &#x2193;
+  </div>
+
+  <main>
+      <!-- INTRODUCTION SECTION -->
+      <section id="introduction">
+        <div class="section-content">
+          <h2>Introduction</h2>
+          <p>
+            Generative Flow Networks (GFlowNets) offer a new way to think about how we generate things
+            (like molecular structures or other complex designs) when we want more than just a single
+            “best” result. Traditional approaches—especially in reinforcement learning—tend to focus on
+            optimizing one solution above all others. But in many real-world problems, we need a diverse
+            set of high-quality solutions instead of only one.
+          </p>
+          <p>
+            At the heart of GFlowNets lies the idea of assigning a “reward” to every possible outcome
+            and sampling those outcomes in proportion to their reward. This means if multiple outcomes
+            are good, GFlowNets naturally learn to generate each of them at a rate that reflects how
+            useful they are, rather than ignoring them in favor of a single “champion” solution.
+          </p>
+          <p>
+            On this site, you’ll find:
+          </p>
+          <ul>
+            <li>
+              <strong>Theory and Core Concepts:</strong> Explore how GFlowNets work by viewing
+              their underlying math, the flow conservation principle and how they ensure sampling
+              in proportion to reward.
+            </li>
+            <li>
+              <strong>Visual Demos:</strong> Interactive diagrams reveal how GFlowNets balance
+              flows in a directed acyclic graph, showing the difference from standard RL or
+              sampling methods.
+            </li>
+            <li>
+              <strong>Hands-on Tutorials and Examples:</strong> From a simple 2D grid to a Tetris
+              game, see GFlowNets in action and learn how they adapt to favor multiple high-reward
+              possibilities.
+            </li>
+            <li>
+              <strong>Real-World Applications:</strong> Discover how GFlowNets can be used in
+              diverse areas like drug discovery, combinatorial optimization, and neural architecture
+              search.
+            </li>
+          </ul>
+          <p>
+            By the end, you’ll understand why GFlowNets are a powerful tool for exploring multimodal
+            landscapes—where multiple peaks in the reward surface can lead to equally valid or even
+            complementary solutions!
+          </p>
+        </div>
+      </section>
+      
+
+      <!-- COMPARISON SECTION: GFlowNets vs. Traditional Methods (uses d3.js) -->
+<!-- COMPARISON SECTION: GFlowNets vs. Traditional Methods (uses d3.js) -->
+<section id="comparison">
+  <div class="section-content">
+    <h2>Comparison: GFlowNets vs. Traditional Methods</h2>
+    <p>
+      One of the main differences between GFlowNets and traditional artificial intelligence methods (like certain reinforcement learning or sampling
+      approaches) is their treatment of multiple good solutions. Traditional approaches often pour all
+      their effort into a single high-reward trajectory, ignoring alternative paths that might also yield
+      desirable outcomes. A GFlowNet, on the other hand, actively spreads its probability mass across
+      diverse high-reward trajectories, ensuring each one is represented according to its value.
+    </p>
+    <p>
+      In the two diagrams below, you can see how a "traditional" method focuses on just one optimal route,
+      while a GFlowNet covers multiple promising paths. This broad coverage is key when your objective
+      function has several peaks or when exploring different ways to reach similarly high rewards.
+    </p>
+    <div id="chart"></div>
+  </div>
+</section>
+
+<section id="theory">
+  <div class="section-content">
+    <h2>Theory and Core Concepts</h2>
+    <p>
+      Think of a Generative Flow Network (GFlowNet) as a process for building or sampling
+      solutions one step at a time. Imagine a flow of “probability mass” passing through a
+      <strong>directed acyclic graph (DAG)</strong>, where each node represents part of a
+      solution. From one node, you can take different actions (edges) that lead to new nodes,
+      until you reach a final, <em>terminal</em> state.
+    </p>
+
+    <h3>Flow Conservation in Plain Terms</h3>
+    <p>
+      Each non-terminal node acts like a “junction” in a system of pipes. Whatever flow
+      (think of it like water) arrives there must be distributed to its outgoing edges,
+      so <strong>flow in = flow out</strong>. Once you reach a <strong>terminal state</strong>
+      (the completed solution), the flow that arrives there is captured according to the
+      reward, R(x). A higher reward means more flow—and thus a higher probability—assigned
+      to that outcome.
+    </p>
+
+    <h3>The Math Behind the Scenes</h3>
+    <p>
+      Mathematically, if we call <code>F(s → s')</code> the flow from node <code>s</code>
+      to node <code>s'</code>, then for a non-terminal node <code>s</code>:
+    </p>
+    <pre><code>
+∑(s' in children(s)) F(s → s')  =  ∑(s'' in parents(s)) F(s'' → s)
+    </code></pre>
+    <p>
+      and for a terminal node <code>x</code> (i.e., a fully built solution):
+    </p>
+    <pre><code>
+∑(s'' in parents(x)) F(s'' → x)  =  R(x)
+    </code></pre>
+    <p>
+      If we treat <code>F(s → s')</code> as an unnormalized probability, these
+      “flow conservation” rules guarantee that each final solution <code>x</code> is sampled
+      with a probability <em>proportional</em> to its reward, <code>R(x)</code>.
+    </p>
+  </div>
+</section>
+
+
+
+<!-- FLOW CONSERVATION DEMO -->
+<section id="flow-conservation-demo">
+  <div class="section-content">
+    <h2>Flow Conservation Example</h2>
+    <p>
+      Below is a multi-branch DAG with several non-terminal nodes and multiple terminal nodes,
+      each with its own reward. Non-terminal nodes balance their incoming and outgoing flow,
+      while each terminal node’s inflow equals its reward. Colors highlight where each edge leads,
+      and any moving particles on an edge match the target node’s color.
+    </p>
+    <p>
+    NNotice that edges carrying higher flow release particles more often, visually indicating more “preferred” paths.
+    </p>
+    <p>
+      In this example, the total flow through the DAG is <strong>8.5</strong>. The terminal
+      nodes collect flows of <strong>2</strong> (xA), <strong>4</strong> (xD),
+      <strong>0.5</strong> (xB), and <strong>2</strong> (xC). That means xD has the highest
+      reward, so it receives the greatest share of the flow. Converted to sampling probabilities,
+      their chances are:
+    </p>
+    <ul>
+      <li>xA: 2/8.5 ≈ 23.5%</li>
+      <li>xD: 4/8.5 ≈ 47.1%</li>
+      <li>xB: 0.5/8.5 ≈ 5.9%</li>
+      <li>xC: 2/8.5 ≈ 23.5%</li>
+    </ul>
+
+    <div style="text-align:center;">
+      <svg id="flowDAG" width="600" height="400"
+           style="background:#222; border:1px solid #555;"></svg>
+      <div id="flowTooltip"
+           style="position:absolute; z-index:9999; padding:6px 10px; background:rgba(0,0,0,0.7);
+                  color:#fff; border-radius:4px; pointer-events:none; opacity:0;">
+      </div>
+    </div>
+  </div>
+</section>
+
+      
+<!-- 2D GRID TUTORIAL -->
+<section id="twoD-tutorial">
+  <div class="section-content">
+    <h2>2D Points Tutorial: GFlowNet Intuition</h2>
+    <p>
+      Here, we have a simple 10×10 grid representing (x,y) coordinates. Each cell has a reward
+      <code>R(x,y)</code>, displayed using color intensity. The higher the reward, the hotter
+      (redder) the color. You’ll also notice small “hits” popping up in the cells—these occur
+      more frequently where the reward is larger.
+    </p>
+    <p>
+      This simulates how a GFlowNet might behave in a continuous or discrete space, sampling
+      high-reward regions more often than low-reward ones. Unlike a single best-point approach,
+      GFlowNets spread out their sampling, making it much easier to find multiple promising
+      solutions when rewards have more than one peak.
+    </p>
+    <p>
+      Hover over any cell to see its exact <code>(x,y)</code> coordinates and reward. Notice
+      how regions near multiple “peaks” get more hits, reflecting how GFlowNets naturally
+      allocate probability mass in proportion to reward—no single peak dominates.
+    </p>
+    <div style="position:relative; width:fit-content; margin:0 auto;">
+      <svg id="gridTutorialSVG" style="background:#333; border:1px solid #555;"></svg>
+      <div id="gridTooltip"
+           style="position:absolute; z-index:9999; padding:5px 10px;
+                  background:rgba(0,0,0,0.8); color:#fff; border-radius:4px;
+                  pointer-events:none; opacity:0;">
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Flow Balance Simulator Section -->
+<section id="sankey-simulator">
+  <div class="section-content">
+    <h2>Flow Balance Simulator</h2>
+    <p>
+      This interactive Sankey diagram shows how flow values (or “probabilities”) adjust
+      to maintain conservation across different nodes—just like in a GFlowNet. You can
+      change the reward for each <strong>terminal</strong> node using the input boxes below
+      the diagram, and watch how the upstream flows rebalance automatically.
+    </p>
+    <p>
+      The diagram starts with a <em>source</em> node called “Start,” which branches into
+      intermediate nodes and finally into multiple terminal nodes, each with its own reward.
+      When you tweak a terminal node’s reward, that change ripples back through the branches,
+      making the total flow from the source adapt to match the new values. This is a great
+      way to see flow conservation in action: <strong>every node’s inflow matches its outflow</strong>,
+      right up until it reaches the terminal states.
+    </p>
+    <!-- Container for the Sankey SVG -->
+    <div id="sankeyContainer"></div>
+    <!-- Container for the interactive reward inputs -->
+    <div id="rewardInputs"></div>
+  </div>
+</section>
+
+<!-- MATHEMATICAL FOUNDATIONS SECTION -->
+<section id="mathematical-foundations">
+  <div class="section-content">
+    <h2>Mathematical Foundations</h2>
+    <p>
+      Having seen how <em>flows</em> determine the probability of reaching a particular
+      terminal state, let’s express this more formally. We define <code>F(s)</code> as
+      the net flow into state <code>s</code>, and <code>F(s → s')</code> as the flow
+      along each edge from <code>s</code> to <code>s'</code>. A GFlowNet typically
+      parameterizes the <strong>policy</strong> of moving from <code>s</code> to
+      <code>s'</code> as:
+    </p>
+    <pre><code>P_F(s' | s) = F(s → s') / F(s),    where  F(s) = ∑(s') F(s → s')
+</code></pre>
+    <p>
+      For a terminal state <code>x</code>, its total incoming flow is equal to its reward
+      <code>R(x)</code>. Over all paths leading to <code>x</code>, the implied sampling
+      probability is:
+    </p>
+    <pre><code>P_F(x) = (1/Z) * R(x),    where  Z = ∑(x in terminal states) R(x).
+</code></pre>
+    <p>
+      In other words, each final state is sampled <em>in proportion to</em> its reward.
+      To make this happen, GFlowNet <strong>training</strong> adjusts the flows (often
+      via a neural network) so that the above equations hold approximately for every
+      state. Several algorithms exist to enforce this:
+    </p>
+    <ul>
+      <li>
+        <strong>Trajectory Balance (TB):</strong> Ensures the product of forward and
+        backward probabilities along a path matches the ratio of rewards at the terminals.
+      </li>
+      <li>
+        <strong>Flow Matching:</strong> Directly creates loss terms that match inflow
+        and outflow at each state.
+      </li>
+      <li>
+        <strong>Detailed Balance (DB):</strong> Uses pairwise constraints on forward/backward
+        probabilities for each edge to keep flows consistent with rewards.
+      </li>
+    </ul>
+    <p>
+      Regardless of which training strategy is used, the end goal is the same: make
+      <code>P_F(x)</code> reflect <code>R(x)</code>. This differs from maximum-likelihood
+      generative modeling, where the objective is to replicate a given data distribution.
+      In GFlowNets, we <em>define</em> the target distribution via the reward function,
+      then learn to sample from it efficiently through sequential construction.
+    </p>
+  </div>
+</section>
+
+
+
+<!-- TETRIS DEMO SECTION -->
+<section id="tetris-demo">
+  <div class="section-content">
+    <h2>Interactive Tetris Demo: GFlowNet in Action</h2>
+    <p>
+      Welcome to our final showcase: a Tetris board where each piece placement is guided
+      by a GFlowNet. Instead of searching for one “perfect” sequence of moves, the GFlowNet
+      explores different ways of placing pieces, with <strong>reward</strong> based on
+      the number of lines cleared.
+    </p>
+    <p>
+      Behind the scenes, the GFlowNet was <strong>pre-trained</strong> by simulating
+      many Tetris games (often called “episodes”). In each game:
+    </p>
+    <ul>
+      <li>
+        The agent received a small <em>partial reward</em> every time it cleared one or
+        more lines.
+      </li>
+      <li>
+        When the board filled up (game over), it got a <em>negative penalty</em>, which
+        discourages bad placements.
+      </li>
+      <li>
+        Over time, the GFlowNet updated its “flows,” gradually learning a probability
+        distribution that favors moves leading to higher scores.
+      </li>
+    </ul>
+    <p>
+      In this interactive version, you can see a list of suggested moves, each with
+      its own “flow” or unnormalized probability. The Tetris engine then either chooses
+      the most likely move or one of the others (for exploration). As lines are cleared
+      and new pieces arrive, the GFlowNet further adapts, <strong>balancing multiple good
+      ways</strong> to earn points rather than fixating on just one strategy.
+    </p>
+    <p>
+      Play a few rounds to see how the moves shift over time. It may not be perfect,
+      but it’s a great illustration of how GFlowNets can handle <strong>multi-step
+      decision processes</strong> with partial rewards and a need for continuous, diverse
+      exploration. 
+    </p>
+  </div>
+</section>
+
+
+
+      <section id="tetris-game">
+        <div class="container">
+          <div class="board">
+              <canvas id="tetrisCanvas" width="300" height="600"></canvas>
+          </div>
+          <div class="sidebar">
+              <h2>Top 3 Candidate Moves</h2>
+              <div id="candidateList"></div>
+              <div class="controls">
+                  <button id="resetBtn">Reset Game</button>
+              </div>
+          </div>
+      </div>
+    </div>
+  </section>
+  
+
+<!-- APPLICATIONS SECTION -->
+<section id="applications">
+  <div class="section-content">
+    <h2>Applications</h2>
+    <p>
+      GFlowNets truly shine when you want more than just a single best outcome. Here are a few areas where this approach is particularly effective:
+    </p>
+    <ul>
+      <li>
+        <strong>Molecular Generation:</strong> 
+        Assemble molecules from atoms or functional groups, assigning higher rewards for
+        features like desired chemical properties. Instead of fixating on a single “optimal”
+        molecule, GFlowNets propose many viable candidates for further testing.
+      </li>
+      <li>
+        <strong>Combinatorial Optimization:</strong> 
+        In multi-peaked or ambiguous objective landscapes (e.g., scheduling, routing, or
+        traveling salesman problems), GFlowNets provide multiple near-optimal solutions—
+        crucial when different solutions may each have their own practical benefits.
+      </li>
+      <li>
+        <strong>Symbolic Regression:</strong> 
+        Generate various mathematical expressions that fit data well. This is useful if
+        multiple equations yield similar accuracy or if certain forms are more interpretable.
+      </li>
+      <li>
+        <strong>Neural Architecture Search:</strong> 
+        Rather than pinpointing just one top neural network design, GFlowNets uncover a
+        range of architectures with strong performance, offering flexibility in deployment.
+      </li>
+    </ul>
+    <p>
+      Traditional RL or single-objective methods often collapse onto a single peak in
+      the reward landscape, overlooking other worthwhile regions. GFlowNets overcome
+      this by <em>automatically sampling multiple modes</em> in proportion to their
+      reward, ensuring a broad and effective search across complex spaces.
+    </p>
+  </div>
+</section>
+
+  
+    </main>
+  <footer>
+      <p>&copy; 2025 - GFlowNet Visualizations Project</p>
+  </footer>
+  <!-- Main Tetris logic -->
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+
+  <!-- Particles.js background config -->
+  <script>
+    particlesJS("particles-js", {
+      particles: {
+        number: { value: 50, density: { enable: true, value_area: 800 } },
+        color: { value: "#00bfff" },
+        shape: {
+          type: "circle",
+          stroke: { width: 0, color: "#000" },
+          polygon: { nb_sides: 5 }
+        },
+        opacity: { value: 0.5, random: true },
+        size: { value: 3, random: true },
+        line_linked: {
+          enable: true,
+          distance: 150,
+          color: "#00bfff",
+          opacity: 0.4,
+          width: 1
+        },
+        move: {
+          enable: true,
+          speed: 2,
+          direction: "none",
+          random: false,
+          straight: false,
+          out_mode: "out"
+        }
+      },
+      interactivity: {
+        detect_on: "canvas",
+        events: {
+          onhover: { enable: false },
+          onclick: { enable: false }
+        }
+      },
+      retina_detect: true
+    });
+  </script>
+
+  <!-- Combined DOMContentLoaded initialization -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Initialize other demos
+      initFlowConservationDemo();   // from d3_2.js
+      init2DGridTutorial();         // from d3_tutorial_2D.js
+
+      // Intersection Observer to add 'active' class to sections when in viewport
+      const sections = document.querySelectorAll("main section");
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting) {
+            entry.target.classList.add("active");
+          } else {
+            entry.target.classList.remove("active");
+          }
+        });
+      }, { threshold: 0.5 });
+      sections.forEach(section => observer.observe(section));
+    });
+  </script>
+</body>
+</html>
