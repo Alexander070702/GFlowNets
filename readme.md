@@ -111,3 +111,5 @@ This script does offline training without the browser UI:
 2. **Optional: Pretrain**  
    ```bash
    python pretrain.py --episodes 20000 --checkpoint_file pretrained_flows_tb.json
+
+3. **Run webserver: python3 app.py** 
