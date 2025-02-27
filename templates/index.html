@@ -85,7 +85,7 @@
             </li>
             <li>
               <strong>Real-World Applications:</strong> Discover how GFlowNets can be used in
-              diverse areas like drug discovery, combinatorial optimization, and neural architecture
+              diverse areas like drug discovery, combinatorial optimization and neural architecture
               search.
             </li>
           </ul>
@@ -180,7 +180,7 @@
     <p>
       In this example, the total flow through the DAG is <strong>8.5</strong>. The terminal
       nodes collect flows of <strong>2</strong> (xA), <strong>4</strong> (xD),
-      <strong>0.5</strong> (xB), and <strong>2</strong> (xC). That means xD has the highest
+      <strong>0.5</strong> (xB) and <strong>2</strong> (xC). That means xD has the highest
       reward, so it receives the greatest share of the flow. Converted to sampling probabilities,
       their chances are:
     </p>
@@ -244,7 +244,7 @@
       This interactive Sankey diagram shows how flow values (or “probabilities”) adjust
       to maintain conservation across different nodes—just like in a GFlowNet. You can
       change the reward for each <strong>terminal</strong> node using the input boxes below
-      the diagram, and watch how the upstream flows rebalance automatically.
+      the diagram and watch how the upstream flows rebalance automatically.
     </p>
     <p>
       The diagram starts with a <em>source</em> node called “Start,” which branches into
@@ -268,7 +268,7 @@
     <p>
       Having seen how <em>flows</em> determine the probability of reaching a particular
       terminal state, let’s express this more formally. We define <code>F(s)</code> as
-      the net flow into state <code>s</code>, and <code>F(s → s')</code> as the flow
+      the net flow into state <code>s</code> and <code>F(s → s')</code> as the flow
       along each edge from <code>s</code> to <code>s'</code>. A GFlowNet typically
       parameterizes the <strong>policy</strong> of moving from <code>s</code> to
       <code>s'</code> as:
