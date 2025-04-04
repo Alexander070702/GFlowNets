@@ -570,7 +570,7 @@ footer {
       <h2>2. Tetris GFlowNet Demo</h2>
       <p>
         Welcome! We’ll start with the fun part: an interactive Tetris game guided by 
-        a <strong>Generative Flow Network</strong>. In a typical AI approach, we might 
+        a <strong>GFlowNet</strong>. In a typical AI approach, we might 
         see an agent hyper-focus on one “optimal” sequence of moves. But GFlowNets 
         aim to <em>sample multiple good sequences</em>—each rewarded proportionally to 
         how long they are predicted to make the agent survive the game. 
@@ -629,7 +629,7 @@ footer {
     <div class="section-content">
       <h2>3. Understanding GFlowNets</h2>
       <p>
-        GFlowNets (Generative Flow Networks) are a novel class of generative models 
+        GFlowNets are a novel class of generative models 
         designed to <em>sample from an unnormalized distribution</em> defined by a 
         reward function. In simpler words, imagine you have a function <code>R(x)</code> 
         that tells you how “good” a configuration <code>x</code> is. You might only 
@@ -695,138 +695,107 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
   <div class="section-content">
     <h2>4. Core Concepts &amp; Flow Conservation</h2>
     <p>
-      Generative Flow Networks conceptualize the solution-building process 
-      (e.g., creating a molecule) as traversing paths in a Directed Acyclic Graph (DAG). 
-      Each node in the DAG represents a <em>partial</em> solution and each edge moves 
-      you to a “more complete” solution. By enforcing the principle of 
-      <strong>flow conservation</strong>—that inflow equals outflow for each node—
-      GFlowNets ensure solutions are eventually sampled with probability proportional 
-      to their reward.
+      Generative Flow Networks (GFlowNets) approach the generation of complex objects, such as molecules, by treating it as a step-by-step journey through a Directed Acyclic Graph (DAG). Each node in this DAG represents a <em>partial</em> solution, and each edge represents a decision or action that advances towards a "more complete" solution. GFlowNets ensure that the likelihood of reaching a final solution (terminal node) is proportional to its "reward" or quality by enforcing the fundamental principle of <strong>flow conservation</strong>: the flow entering any node must equal the flow leaving it.
     </p>
+
     <p>
-      In drug discovery, these “rewards” often represent model predictions of drug 
-      efficacy or binding affinity. GFlowNets thus let you draw from the space of 
-      potential molecules in a way that gives higher chances to better candidates, but 
-      still keeps diversity. In the DAG below, you’ll see how flow can split into multiple 
-      paths. Some paths lead to “promising” final molecules with higher probabilities 
-      (e.g. ~20–25%), while others lead to lower-quality solutions that collectively 
-      share the remaining flow.
+      In practical scenarios such as drug discovery, these rewards might represent predictions of a molecule's effectiveness or its potential to bind to a target protein. Rather than focusing on a single best solution, GFlowNets encourage diversity by distributing probabilities across many good outcomes. This approach naturally balances exploration and exploitation, providing multiple promising solutions rather than just one.
     </p>
 
-<!-- BIG DAG in #moleculeFlowSVG (molecule_flow.js) -->
-<div id="moleculeFlowContainer">
-  <svg id="moleculeFlowSVG" width="1000" height="600"></svg>
-  <div id="flowTooltipBig"
-       style="position:absolute; background:#333; color:#fff; padding:6px; 
-              border-radius:4px; pointer-events:none; opacity:0;">
-  </div>
-</div>
+    <!-- BIG DAG in #moleculeFlowSVG (molecule_flow.js) -->
+    <div id="moleculeFlowContainer">
+      <svg id="moleculeFlowSVG" width="1000" height="600"></svg>
+      <div id="flowTooltipBig"
+           style="position:absolute; background:#333; color:#fff; padding:6px; 
+                  border-radius:4px; pointer-events:none; opacity:0;">
+      </div>
+    </div>
 
-<style>
-  /* Center the container */
-  #moleculeFlowContainer {
-    max-width: 1000px;    /* match your SVG width */
-    margin: 0 auto;       /* centers it horizontally */
-    padding: 0;           /* remove extra padding */
-    text-align: center;   /* centers the SVG if inline-block */
-  }
+    <style>
+      #moleculeFlowContainer {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0;
+        text-align: center;
+      }
 
-  /* Make sure the SVG itself is centered if block-level */
-  #moleculeFlowSVG {
-    display: block;
-    margin: 0 auto;
-  }
-</style>
+      #moleculeFlowSVG {
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
 
-<script src="static/molecule_flow.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    initMoleculeFlowDemo();
-  });
-</script>
-
-
+    <script src="static/molecule_flow.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        initMoleculeFlowDemo();
+      });
+    </script>
 
     <details>
       <summary>Interpreting the DAG</summary>
       <p>
-        Each “layer” or “tranche” in the diagram represents progressively more 
-        completed partial molecules. Edges carry flow forward to the next layer, 
-        eventually arriving at terminal (final) molecules. Notice how the four 
-        best-scoring molecules absorb most of the flow (~87% combined):
+        Each level in the DAG visualization represents progressively more complete partial solutions. Nodes represent partial states, and edges represent actions taken. The graph never loops back to earlier states, ensuring a clear forward progression toward fully formed solutions at the bottom.
       </p>
-      <ul>
-        <li>Molecule A: 24%</li>
-        <li>Molecule B: 22%</li>
-        <li>Molecule C: 21%</li>
-        <li>Molecule D: 20%</li>
-      </ul>
       <p>
-        A variety of weaker candidates split up the remaining ~13% of flow. This 
-        distribution naturally arises if their rewards are lower, yet not 
-        strictly zero. When sampling molecules from a GFlowNet that respects 
-        these flows, you’ll encounter the four “good” solutions more often, but 
-        you can still occasionally see alternative ones—a built-in diversity 
-        that’s extremely valuable in drug discovery.
+        The thickness of edges or visual indicators of "flow" represent how likely a path is chosen. Paths that end in better final solutions naturally carry more flow. Multiple paths can converge into the same state, highlighting that the same final object can often be built through various action sequences. The key insight is that the total inflow at any node matches exactly its total outflow—this is the principle of flow conservation in action.
       </p>
-  
-
     </details>
+
     <details>
       <summary>Why This Matters in Drug Discovery</summary>
       <p>
-        By spreading the sampling across multiple strong molecules, GFlowNets 
-        mitigate the risk that a single high-scoring molecule fails in real-world 
-        tests. You don’t just get one “winner,” but rather a set of leading candidates, 
-        each discovered and tested proportionally to how well it’s currently 
-        predicted to perform. This makes the search more robust and more likely 
-        to yield at least one practical drug candidate.
+        Drug discovery is expensive, time-consuming, and uncertain. By generating multiple strong candidates rather than just one, GFlowNets offer a robust strategy for exploring large solution spaces, like potential drug molecules. If one candidate fails, other promising candidates still remain, increasing the overall chance of discovering effective drugs.
+      </p>
+      <p>
+        GFlowNets also handle uncertainty in scoring systems gracefully. Even solutions that score slightly lower won't be entirely discarded, ensuring valuable alternatives aren't overlooked.
       </p>
     </details>
 
     <details>
       <summary>Technical Insight: Flow = Reward at Terminal Nodes</summary>
       <p>
-        Flow conservation means the net flow arriving at a final molecule is 
-        forced to equal that molecule’s reward <code>R(x)</code>. If a final solution 
-        is twice as “good” as another, it gets double the flow. This direct link 
-        between reward and flow ensures that when you sample from the network, 
-        each solution appears with probability proportional to <code>R(x)</code>. 
-        It’s as if each solution’s “share” of flow is pinned to its quality.
+        GFlowNets directly link the concept of "flow" with the quality of solutions by ensuring the total flow entering a terminal node (final solution) exactly equals its reward. This ensures that solutions appear with probabilities directly proportional to their quality scores.
       </p>
       <p>
-        This mechanism stands in contrast to single-solution methods that might 
-        converge on only one candidate. GFlowNets, by design, split flow among all 
-        high-quality (high reward) states. 
+        Training a GFlowNet involves adjusting how flow moves through the DAG, so that higher-reward solutions naturally receive proportionally higher flow, fulfilling the key principle that flow equals reward at each terminal state.
       </p>
     </details>
 
-  <div class="references">
-    <h3>Further Reading – Core Concepts &amp; Flow Conservation</h3>
-    <ul>
-      <li>
-        <strong>[1]</strong>
-        Malkin, N. et al.
-        <a href="https://arxiv.org/pdf/2201.13259.pdf" target="_blank">
-          <em>Trajectory Balance: Improved Credit Assignment in GFlowNets</em>
-        </a>
-        (ICML 2022)
-      </li>
-      <li>
-        <strong>[2]</strong>
-        Madan, K. et al.
-        <a href="https://arxiv.org/pdf/2209.12782.pdf" target="_blank">
-          <em>Learning GFlowNets from Partial Episodes for Improved Convergence and Stability</em>
-        </a>
-        (arXiv 2022)
-      </li>
-    </ul>
+    <details>
+      <summary>BONUS: Pretraining GFlowNets for Fast Inference</summary>
+      <p>
+        One major advantage of GFlowNets is their ability to be pretrained. After an initial investment in training, a GFlowNet can quickly generate new high-quality solutions with minimal computation, greatly speeding up tasks such as drug molecule generation.
+      </p>
+      <p>
+        Compared to methods that perform extensive computations per solution (like traditional optimization methods), GFlowNets generate diverse solutions in a single, efficient forward pass. Pretraining further enables rapid adaptation to similar new problems, significantly accelerating exploratory workflows.
+      </p>
+    </details>
+
+    <div class="references">
+      <h3>Further Reading – Core Concepts &amp; Flow Conservation</h3>
+      <ul>
+        <li>
+          <strong>[1]</strong>
+          Malkin, N. et al.
+          <a href="https://arxiv.org/pdf/2201.13259.pdf" target="_blank">
+            <em>Trajectory Balance: Improved Credit Assignment in GFlowNets</em>
+          </a>
+          (ICML 2022)
+        </li>
+        <li>
+          <strong>[2]</strong>
+          Madan, K. et al.
+          <a href="https://arxiv.org/pdf/2209.12782.pdf" target="_blank">
+            <em>Learning GFlowNets from Partial Episodes for Improved Convergence and Stability</em>
+          </a>
+          (arXiv 2022)
+        </li>
+      </ul>
+    </div>
+
   </div>
-
 </section>
-
-
-
 
 <section id="advanced-math">
   <div class="section-content">
