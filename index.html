@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Understanding Generative Flow Networks (GFlowNets) – A User perspective</title>
+  <!-- Load Dagre first -->
+<script src="https://unpkg.com/dagre/dist/dagre.min.js"></script>
+<!-- KaTeX CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
+      integrity="sha384-zh0CIslj+VczCZtlzBcjt5ppRcsAmDnRem7ESsYwWwg3m/OaJ2l4x7YBZl9Kxxib" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"
+        integrity="sha384-Rma6DA2IPUwhNxmrB/7S3Tno0YY7sFu9WSYMCuulLhIqYSGZ2gKCJWIqhBWqMQfh" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js"
+        integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"
+        onload="renderMathInElement(document.body);"></script>
+
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+
+
+<style>
+  nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background: rgba(0,0,0,0.9);
+  transform: translateX(-270px);
+  transition: transform 0.3s ease;
+  padding: 60px 20px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+nav.show {
+  transform: translateX(0);
+}
+.nav-menu {
+  list-style: none;
+}
+.nav-menu li {
+  margin-bottom: 15px;
+}
+.nav-menu a {
+  color: #eee;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.nav-menu a:hover {
+  text-decoration: underline;
+}
+  details > summary + p + ul {
+  margin-left: 2em;  /* or whatever spacing you prefer */
+}
+
+/* Optional: Some extra styling for math blocks */
+.katex-display {
+margin: 1em 0;
+text-align: center;
+}
+code {
+background-color: #f3f3f3;
+padding: 2px 4px;
+border-radius: 4px;
+font-size: 90%;
+}
+details > summary {
+cursor: pointer;
+font-weight: bold;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #111;
+  color: #eee;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+/* (Line 20) Headings & Text */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #00bfff;
+}
+h1 {
+  font-size: 2rem;
+  margin-top: 80px;
+  text-align: center;
+  color: #00bfff;
+}
+h2 {
+  margin-top: 40px;
+  color: #fefefe;
+}
+p, li {
+  margin-bottom: 10px;
+}
+a {
+  color: #00bfff;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+em {
+  font-style: italic;
+}
+code {
+  background: rgba(255,255,255,0.07);
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+}
+pre {
+  background: rgba(255,255,255,0.1);
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 15px 0;
+}
+/* (Line 50) Layout: main container */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  position: relative;
+  z-index: 1; /* Over the particle background */
+}
+/* (Line 60) Sections styling */
+section {
+  margin-bottom: 100px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 6px;
+  padding: 20px;
+  transition: all 0.4s ease;
+}
+section.active {
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.section-content {
+  margin: 0 10px;
+}
+
+/* (Line 75) Particle Background Container */
+#particles-js {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -10; /* behind everything */
+}
+
+/* (Line 80) Header & Burger Menu */
+header {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 9999;
+}
+.burger {
+  width: 30px;
+  height: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.burger span {
+  display: block;
+  height: 4px;
+  background: #fff;
+  border-radius: 2px;
+}
+
+/* (Line 100) Navigation (sidebar) */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background: rgba(0,0,0,0.9);
+  transform: translateX(-270px);
+  transition: transform 0.3s ease;
+  padding: 60px 20px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+nav.show {
+  transform: translateX(0);
+}
+.nav-menu {
+  list-style: none;
+}
+.nav-menu li {
+  margin-bottom: 15px;
+}
+.nav-menu a {
+  color: #eee;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.nav-menu a:hover {
+  text-decoration: underline;
+}
+
+/* (Line 125) The big page title H1 in the center */
+h1 {
+  margin-top: 120px;
+  color: #00bfff;
+  text-align: center;
+  font-size: 2.4rem;
+}
+
+/* (Line 130) Sticky Arrow */
+.sticky-arrow {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #333;
+  color: #fff;
+  padding: 12px 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  z-index: 9999;
+  text-align: center;
+  line-height: 1;
+  transition: background 0.3s;
+}
+.sticky-arrow:hover {
+  background: #444;
+}
+
+/* (Line 145) Tetris container */
+#tetris-game .container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+}
+#tetris-game .board {
+  flex: 0 0 auto;
+}
+#tetris-game .sidebar {
+  flex: 0 0 auto;
+  min-width: 200px;
+  max-width: 280px;
+  background: rgba(0,0,0,0.3);
+  padding: 15px;
+  border-radius: 6px;
+}
+#tetrisCanvas {
+  background: #222;
+  border: 2px solid #444;
+  display: block;
+}
+
+/* (Line 165) Candidate moves list */
+#candidateList {
+  margin-top: 10px;
+}
+.candidate {
+  background: rgba(255,255,255,0.08);
+  border-radius: 5px;
+  padding: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.candidate:hover {
+  background: rgba(255,255,255,0.15);
+}
+.controls button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: #00bfff;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #111;
+}
+.controls button:hover {
+  opacity: 0.85;
+}
+
+/* (Line 185) Collapsible details */
+details {
+  background: rgba(255,255,255,0.07);
+  padding: 10px;
+  border-radius: 5px;
+  margin: 20px 0;
+}
+details summary {
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary:before {
+  content: '► ';
+  color: #ffcc00;
+}
+details[open] summary:before {
+  content: '▼ ';
+  color: #ffcc00;
+}
+
+/* (Line 200) Reference lists */
+.references {
+  margin-top: 25px;
+  background: rgba(255,255,255,0.04);
+  padding: 10px;
+  border-radius: 5px;
+}
+.references h3 {
+  margin-bottom: 10px;
+}
+.references ul, .references ol {
+  margin-left: 20px;
+}
+.references li {
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+#comparisonChart {
+  display: flex;
+  justify-content: center;   /* center them horizontally */
+  gap: 20px;                 /* some spacing between the two mini DAGs */
+}
+
+
+/* (Line 230) Footer */
+footer {
+  text-align: center;
+  padding: 20px 0;
+  margin-top: 40px;
+  background: rgba(255,255,255,0.02);
+  border-top: 1px solid #444;
+}
+
+
+
+    /* Your existing dark-mode styles truncated for brevity... */
+    html, body {
+      background: #111;
+      color: #eee;
+      /* etc... */
+    }
+
+    /*
+      Force KaTeX text to inherit the same color you use for
+      the rest of the page. Otherwise KaTeX may default to black.
+    */
+    .katex, .katex-html, .katex-display {
+      color: inherit !important;
+    }
+
+    /* Make display equations more readable against dark background */
+    .katex-display {
+      margin: 1em auto;
+      text-align: center;
+      font-size: 1.1rem; /* adjust if you want bigger/smaller math */
+      line-height: 1.4;
+    }
+
+        /* =============== KaTeX Styling for Dark Mode =============== */
+    /* Let KaTeX inherit the page's light text color */
+    .katex, .katex-display, .katex-html {
+      color: #f0f0f0 !important;
+      /* 
+         If you still see black text, your browser may be caching KaTeX font files 
+         or there's another conflicting style. A hard refresh or clearing cache helps.
+      */
+    }
+
+    /* Make inline math slightly larger than default */
+    .katex {
+      font-size: 1.06rem; 
+      line-height: 1.5;
+    }
+
+    /* For display math (the $$ ... $$ kind): bigger, with a subtle background box */
+    .katex-display {
+      font-size: 1.15rem;
+      line-height: 1.45;
+      margin: 1.4em auto; 
+      padding: 0.8em 1em;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+      text-align: left; /* or center, if you prefer */
+      max-width: 95%;
+    }
+
+    /*
+       Improve fraction lines, roots, etc. on dark backgrounds
+       KaTeX sets them as border-color, so let's override them
+    */
+    .katex .frac-line, 
+    .katex .sqrt-line {
+      border-color: #bbb !important;
+    }
+
+    /*
+       Tweak the color for things like \tag, equation numbers, etc.
+    */
+    .katex-html .tag {
+      background: #222 !important; 
+      color: #ffcc00 !important; 
+      border-radius: 4px;
+      padding: 0 4px;
+    }
+
+    header {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 99999; /* Higher than the nav */
+}
+.burger {
+  width: 30px;
+  height: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  /* optionally a background or small padding to ensure it's visible */
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+main {
+  flex: 1;
+}
+
+footer {
+  flex-shrink: 0;
+}
+  </style>
+
+</head>
+<body>
+<!-- (Line 250) Particle background container -->
+<div id="particles-js"></div>
+
+<!-- (Line 252) Header with burger menu button -->
+<header>
+  <div id="burger" class="burger" onclick="toggleNavMenu()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</header>
+
+<!-- (Line 260) Main page title -->
+<h1>Understanding Generative Flow Networks (GFlowNets): A User perspective</h1>
+
+<!-- (Line 262) Sidebar Navigation -->
+<nav id="mainNav">
+  <ul class="nav-menu">
+    <li><a href="#introduction">1. Introduction: Generative Flow Networks</a></li>
+    <li><a href="#tetris-demo">2. Tetris GFlowNet Demo</a></li>
+    <li><a href="#motivation">3. Understanding GFlowNets</a></li>
+    <li><a href="#theory">4. Core Concepts</a></li>
+    <li><a href="#advanced-math">5. Advanced Math</a></li>
+  </ul>
+</nav>
+
+
+<!-- (Line 275) Sticky arrow to scroll down or up -->
+<div id="stickyArrow" class="sticky-arrow" onclick="scrollDown()">
+  &#x2193;
+</div>
+
+
+<!-- (Line 280) MAIN CONTENT -->
+<main>
+  <section id="introduction">
+    <div class="section-content">
+      <h2>1. Introduction: Generative Flow Networks (GFlowNets)</h2>
+  
+      <p>
+        A <strong>GFlowNet</strong> samples <em>multiple</em> 
+        high-quality solutions in proportion to their rewards, instead of chasing only 
+        one “optimal” path. In contrast, many <strong>traditional RL</strong> methods quickly 
+        settle on a single best sequence and may ignore other near-optimal options. 
+        The short comparison below illustrates the difference:
+      </p>
+  
+      <!-- Comparison Chart: single-path vs. multi-path -->
+      <div id="comparisonChart" style="width:100%; height:auto; min-height:400px;"></div>
+      <script src="static/comparison.js"></script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          initComparisonChart();
+        });
+      </script>
+  
+      <p>
+        Notice how “Traditional” RL can fixate on one route, while a “GFlowNet” 
+        maintains diverse paths. This diversity is especially valuable in 
+        scenarios like <strong>drug discovery</strong> or <strong>Tetris</strong>, 
+        where multiple solutions may be nearly as good as the top one. By 
+        distributing probability across <em>all</em> strong candidates, 
+        GFlowNets offer broader coverage and often more robust performance 
+        against changes or uncertainties.
+      </p>
+  
+      <div class="references">
+        <h3>Further Reading – Introduction</h3>
+        <ul>
+          <li>
+            <strong>[1]</strong>
+            Bengio, Y. et al. 
+            <a href="https://arxiv.org/pdf/2106.04399.pdf" target="_blank">
+              <em>Flow Network based Generative Models for Non-Iterative Diverse Candidate Generation</em>
+            </a>
+            (NeurIPS 2021)
+          </li>
+          <li>
+            <strong>[2]</strong>
+            Bengio, Y. et al.
+            <a href="https://arxiv.org/pdf/2111.09266.pdf" target="_blank">
+              <em>GFlowNet Foundations</em>
+            </a>
+            (arXiv 2021)
+          </li>
+        </ul>
+      </div>
+      
+    </div>
+  </section>
+  
+  
+  
+
+  <!-- 
+    =================================================================================
+    SECTION 1: TETRIS DEMO
+    We put the Tetris game first to wow the user. 
+    The Tetris logic is embedded as "main.js" at the bottom, inlined for completeness.
+    =================================================================================
+  -->
+  <section id="tetris-demo">
+    <div class="section-content">
+      <h2>2. Tetris GFlowNet Demo</h2>
+      <p>
+        Welcome! We’ll start with the fun part: an interactive Tetris game guided by 
+        a <strong>Generative Flow Network</strong>. In a typical AI approach, we might 
+        see an agent hyper-focus on one “optimal” sequence of moves. But GFlowNets 
+        aim to <em>sample multiple good sequences</em>—each rewarded proportionally to 
+        how long they are predicted to make the agent survive the game. 
+      </p>
+      <p>
+        Check out the “Candidate Moves” on the right. Each has a “flow” value, 
+        representing how strongly the GFlowNet currently prefers it. The GFlowNet can 
+        also sample from less-likely moves, ensuring exploration. Over time, it 
+        balances variety (multiple strategies) with the pursuit of high reward 
+        (surviving the game as long as possible).
+      </p>
+      <p>
+        The GFlowNet automatically selects the best move (highlighted in green), but you can override this by clicking on any other move.      </p>
+    </div>
+
+    <!-- (Line 310) Actual Tetris Canvas & Moves -->
+    <section id="tetris-game">
+      <div class="container">
+        <div class="board">
+          <canvas id="tetrisCanvas" width="300" height="600"></canvas>
+        </div>
+        <div class="sidebar">
+          <h2>Candidate Moves</h2>
+          <div id="candidateList"><!-- Populated by Tetris logic --></div>
+          <div class="controls">
+            <button id="resetBtn">Reset Game</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="references">
+      <h3>Further Reading – Tetris GFlowNet Demo</h3>
+      <ul>
+        <li>
+          <strong>[1]</strong>
+          Pan, L. et al.
+          <a href="https://arxiv.org/pdf/2302.09465.pdf" target="_blank">
+            <em>Stochastic Generative Flow Networks</em>
+          </a>
+          (arXiv 2023)
+        </li>
+        <li>
+          <strong>[2]</strong>
+          Jain, M. et al.
+          <a href="https://arxiv.org/pdf/2203.04115.pdf" target="_blank">
+            <em>Biological Sequence Design with GFlowNets</em>
+          </a>
+          (arXiv 2022)
+        </li>
+      </ul>
+    </div>
+  </section>
+
+
+  <section id="motivation">
+    <div class="section-content">
+      <h2>3. Understanding GFlowNets</h2>
+      <p>
+        GFlowNets (Generative Flow Networks) are a novel class of generative models 
+        designed to <em>sample from an unnormalized distribution</em> defined by a 
+        reward function. In simpler words, imagine you have a function <code>R(x)</code> 
+        that tells you how “good” a configuration <code>x</code> is. You might only 
+        know <code>R(x)</code> up to a constant factor (like a black-box scoring 
+        method or partial information). GFlowNets aim to produce outcomes 
+        <code>x</code> <strong>in proportion to</strong> <code>R(x)</code>, 
+        encouraging coverage of <em>all good solutions</em>, not just the single best.
+      </p>
+      <p>
+        This is especially powerful in real-world tasks: from Tetris to drug discovery, 
+        you often want multiple strong solutions. Traditional RL might fixate on 
+        one “optimal path,” but GFlowNets discover a broad set of solutions, each 
+        sampled in proportion to how good it is.
+      </p>
+
+  
+
+
+     <!-- For flow conservation (motivation) -->
+ <div id="flowConservationContainer">
+  <svg id="flowConservationSVG"></svg>
+</div>
+
+
+<!-- Load & initialize your flow_conservation.js code -->
+<script src="/static/flow_conservation.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+initFlowConservationDemo();
+});
+</script>
+<div class="references">
+  <h3>Further Readings - Understanding GFlowNets</h3>
+  <ul>
+    <li>
+      <strong>[1]</strong>
+      Tiapkin, D. et al.
+      <a href="https://arxiv.org/pdf/2310.12934.pdf" target="_blank">
+        <em>Generative Flow Networks as Entropy-Regularized RL</em>
+      </a>
+      (arXiv 2023)
+    </li>
+    <li>
+      <strong>[2]</strong>
+      Zhang, D. et al.
+      <a href="https://arxiv.org/pdf/2209.02606.pdf" target="_blank">
+        <em>Unifying Generative Models with GFlowNets and Beyond</em>
+      </a>
+      (arXiv 2022)
+    </li>
+  </ul>
+</div>
+
+  </section>
+  
+
+  
+
+  <!-- =================================================================================
+SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualization
+================================================================================= -->
+<section id="theory">
+  <div class="section-content">
+    <h2>4. Core Concepts &amp; Flow Conservation</h2>
+    <p>
+      Generative Flow Networks conceptualize the solution-building process 
+      (e.g., creating a molecule) as traversing paths in a Directed Acyclic Graph (DAG). 
+      Each node in the DAG represents a <em>partial</em> solution and each edge moves 
+      you to a “more complete” solution. By enforcing the principle of 
+      <strong>flow conservation</strong>—that inflow equals outflow for each node—
+      GFlowNets ensure solutions are eventually sampled with probability proportional 
+      to their reward.
+    </p>
+    <p>
+      In drug discovery, these “rewards” often represent model predictions of drug 
+      efficacy or binding affinity. GFlowNets thus let you draw from the space of 
+      potential molecules in a way that gives higher chances to better candidates, but 
+      still keeps diversity. In the DAG below, you’ll see how flow can split into multiple 
+      paths. Some paths lead to “promising” final molecules with higher probabilities 
+      (e.g. ~20–25%), while others lead to lower-quality solutions that collectively 
+      share the remaining flow.
+    </p>
+
+<!-- BIG DAG in #moleculeFlowSVG (molecule_flow.js) -->
+<div id="moleculeFlowContainer">
+  <svg id="moleculeFlowSVG" width="1000" height="600"></svg>
+  <div id="flowTooltipBig"
+       style="position:absolute; background:#333; color:#fff; padding:6px; 
+              border-radius:4px; pointer-events:none; opacity:0;">
+  </div>
+</div>
+
+<style>
+  /* Center the container */
+  #moleculeFlowContainer {
+    max-width: 1000px;    /* match your SVG width */
+    margin: 0 auto;       /* centers it horizontally */
+    padding: 0;           /* remove extra padding */
+    text-align: center;   /* centers the SVG if inline-block */
+  }
+
+  /* Make sure the SVG itself is centered if block-level */
+  #moleculeFlowSVG {
+    display: block;
+    margin: 0 auto;
+  }
+</style>
+
+<script src="static/molecule_flow.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    initMoleculeFlowDemo();
+  });
+</script>
+
+
+
+    <details>
+      <summary>Interpreting the DAG</summary>
+      <p>
+        Each “layer” or “tranche” in the diagram represents progressively more 
+        completed partial molecules. Edges carry flow forward to the next layer, 
+        eventually arriving at terminal (final) molecules. Notice how the four 
+        best-scoring molecules absorb most of the flow (~87% combined):
+      </p>
+      <ul>
+        <li>Molecule A: 24%</li>
+        <li>Molecule B: 22%</li>
+        <li>Molecule C: 21%</li>
+        <li>Molecule D: 20%</li>
+      </ul>
+      <p>
+        A variety of weaker candidates split up the remaining ~13% of flow. This 
+        distribution naturally arises if their rewards are lower, yet not 
+        strictly zero. When sampling molecules from a GFlowNet that respects 
+        these flows, you’ll encounter the four “good” solutions more often, but 
+        you can still occasionally see alternative ones—a built-in diversity 
+        that’s extremely valuable in drug discovery.
+      </p>
+  
+
+    </details>
+    <details>
+      <summary>Why This Matters in Drug Discovery</summary>
+      <p>
+        By spreading the sampling across multiple strong molecules, GFlowNets 
+        mitigate the risk that a single high-scoring molecule fails in real-world 
+        tests. You don’t just get one “winner,” but rather a set of leading candidates, 
+        each discovered and tested proportionally to how well it’s currently 
+        predicted to perform. This makes the search more robust and more likely 
+        to yield at least one practical drug candidate.
+      </p>
+    </details>
+
+    <details>
+      <summary>Technical Insight: Flow = Reward at Terminal Nodes</summary>
+      <p>
+        Flow conservation means the net flow arriving at a final molecule is 
+        forced to equal that molecule’s reward <code>R(x)</code>. If a final solution 
+        is twice as “good” as another, it gets double the flow. This direct link 
+        between reward and flow ensures that when you sample from the network, 
+        each solution appears with probability proportional to <code>R(x)</code>. 
+        It’s as if each solution’s “share” of flow is pinned to its quality.
+      </p>
+      <p>
+        This mechanism stands in contrast to single-solution methods that might 
+        converge on only one candidate. GFlowNets, by design, split flow among all 
+        high-quality (high reward) states. 
+      </p>
+    </details>
+
+  <div class="references">
+    <h3>Further Reading – Core Concepts &amp; Flow Conservation</h3>
+    <ul>
+      <li>
+        <strong>[1]</strong>
+        Malkin, N. et al.
+        <a href="https://arxiv.org/pdf/2201.13259.pdf" target="_blank">
+          <em>Trajectory Balance: Improved Credit Assignment in GFlowNets</em>
+        </a>
+        (ICML 2022)
+      </li>
+      <li>
+        <strong>[2]</strong>
+        Madan, K. et al.
+        <a href="https://arxiv.org/pdf/2209.12782.pdf" target="_blank">
+          <em>Learning GFlowNets from Partial Episodes for Improved Convergence and Stability</em>
+        </a>
+        (arXiv 2022)
+      </li>
+    </ul>
+  </div>
+
+</section>
+
+
+
+
+<section id="advanced-math">
+  <div class="section-content">
+    <h2>5. Advanced Math</h2>
+    <p>
+      Below are expansions with more formal definitions, training objectives like 
+      Trajectory Balance, Flow Matching, Detailed Balance and references to the 
+      original derivations. Expand any if you want the rigorous details.
+    </p>
+
+    <!-- Flow Formulas & Probability Calculation -->
+    <details>
+      <summary>Flow Formulas &amp; Probability Calculation</summary>
+      <p>
+        Let $F(s \to s')$ be the flow from state $s$ to state $s'$.  
+        In a non-terminal state $s$:
+      </p>
+      <!-- Display mode equation with double $$ -->
+      $$\sum_{\text{children of } s} F\bigl(s \to s_{\text{child}}\bigr) 
+        \;=\; 
+        \sum_{\text{parents of } s} F\bigl(s_{\text{parent}} \to s\bigr).$$
+
+      <p>
+        For a terminal state $x$, the total inflow equals its reward:  
+        $$\sum_{\text{parents of } x} F(\ldots) \;=\; R(x).$$
+        Sampling $x$ with probability 
+        $$\frac{R(x)}{\sum R(x')}$$ 
+        follows if we treat each $F(s \to s')$ as unnormalized probabilities 
+        forming a policy.
+      </p>
+    </details>
+
+    <!-- Trajectory Balance (TB) -->
+    <details>
+      <summary>Trajectory Balance (TB)</summary>
+      <p>
+        TB ties the forward probabilities along a trajectory to the reward $R(x)$ 
+        and the backward probabilities. Specifically, if  
+        $$\tau = (s_0 \to s_1 \to \dots \to s_n = x)$$
+        is a path to terminal $x$, TB wants:
+      </p>
+      $$\frac{P_F(\tau)}{Q(\tau)} \;=\; \frac{R(x)}{Z},$$
+
+      <p>
+        where $Q(\tau)$ is the backward or reverse path probability and $Z$ 
+        is the partition function (the sum of all $R(x)$).  
+        This elegantly ensures each trajectory’s total probability mass 
+        aligns with the reward.
+      </p>
+    </details>
+
+    <!-- Flow Matching & Detailed Balance -->
+    <details>
+      <summary>Flow Matching &amp; Detailed Balance</summary>
+      <p>
+        Flow Matching is a local constraint approach: for each state $s$, 
+        <em>incoming flow = outgoing flow</em>. Detailed Balance is a pairwise 
+        condition that ensures symmetrical consistency across edges, also leading 
+        to a consistent overall distribution.
+      </p>
+      <p>
+        Both yield solutions that sample final states in proportion to $R(x)$, but 
+        TB can handle longer trajectories more effectively, often reducing variance.
+      </p>
+    </details>
+
+    <!-- References -->
+    <div class="references">
+      <h3>Further Reading – Advanced Math</h3>
+      <ul>
+        <li>
+          <strong>[1]</strong>
+          Zimmermann, H. et al.
+          <a href="https://arxiv.org/pdf/2210.07992.pdf" target="_blank">
+            <em>A Variational Perspective on Generative Flow Networks</em>
+          </a>
+          (arXiv 2022)
+        </li>
+        <li>
+          <strong>[2]</strong>
+          Jiralerspong, M. et al.
+          <a href="https://arxiv.org/pdf/2310.02779.pdf" target="_blank">
+            <em>Expected Flow Networks in Stochastic Environments and Two-Player Zero-Sum Games</em>
+          </a>
+          (arXiv 2023)
+        </li>
+        <li>
+          <strong>[3]</strong>
+          Li, C. et al.
+          <a href="https://arxiv.org/pdf/2406.01901.pdf" target="_blank">
+            <em>Bifurcated Generative Flow Networks</em>
+          </a>
+          (arXiv 2024)
+        </li>
+      </ul>
+    </div>
+    
+</section>
+
+  
+</main>
+
+<!-- (Line 830) FOOTER -->
+<footer>
+  <p>&copy; 2025 – Understanding Generative Flow Networks (GFlowNets) - A User perspective</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+
+
+<script>
+
+"use strict";
+
+// ====================== CONSTANTS & GLOBALS ======================
+const CELL_SIZE = 30;
+const COLS = 10;
+const ROWS = 20;
+const TICK_INTERVAL = 700;
+const MOVE_PAUSE_DURATION = 2000;
+
+// Game/Agent
+let game = null;
+let agent = null;
+let trajectory = [];
+
+// UI Elements
+let canvas = null;
+let ctx = null;
+let candidateListEl = null;
+let resetBtn = null;
+
+// State
+let currentGameState = null;
+let currentPieceCenter = { x:0, y:0 };
+let candidateMoves = [];
+let topCandidates = [];
+let appliedArrows = [];
+let particles = [];
+
+let simulationPaused = false;
+let lastPieceId = null;
+let particleSpawnAccumulator = 0;
+let lastTime = performance.now();
+
+// Tetromino definitions
+const TETROMINOES = {
+  I: [
+    [0,0,0,0],
+    [1,1,1,1],
+    [0,0,0,0],
+    [0,0,0,0]
+  ],
+  O: [
+    [1,1],
+    [1,1]
+  ],
+  T: [
+    [0,1,0],
+    [1,1,1],
+    [0,0,0]
+  ],
+  S: [
+    [0,1,1],
+    [1,1,0],
+    [0,0,0]
+  ],
+  Z: [
+    [1,1,0],
+    [0,1,1],
+    [0,0,0]
+  ],
+  J: [
+    [1,0,0],
+    [1,1,1],
+    [0,0,0]
+  ],
+  L: [
+    [0,0,1],
+    [1,1,1],
+    [0,0,0]
+  ]
+};
+
+// ====================== HELPER FUNCTIONS ======================
+function deepCopy(matrix) {
+  return JSON.parse(JSON.stringify(matrix));
+}
+function rotateMatrix(matrix) {
+  const rows = matrix.length;
+  const cols = matrix[0].length;
+  const rotated = [];
+  for (let c=0; c<cols; c++){
+    rotated[c] = [];
+    for (let r=rows-1; r>=0; r--){
+      rotated[c].push(matrix[r][c]);
+    }
+  }
+  return rotated;
+}
+function hexToRgb(hex) {
+  hex = hex.replace(/^#/, "");
+  const bigint = parseInt(hex, 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255
+  };
+}
+
+// ====================== TETRIS GAME CLASS ======================
+class TetrisGame {
+  constructor(cols=COLS, rows=ROWS){
+    this.cols = cols;
+    this.rows = rows;
+    this.reset_game();
+  }
+  reset_game(){
+    this.board = [];
+    for(let r=0; r<this.rows; r++){
+      this.board.push(new Array(this.cols).fill(0));
+    }
+    this.score = 0;
+    this.game_over = false;
+    this.piece_id = 0;
+    this.current_piece = this.spawn_piece();
+    this.target_piece = null;
+    this.cached_moves = null;
+    this._cached_state_key = null;
+  }
+  spawn_piece(){
+    this.piece_id += 1;
+    const tTypes = Object.keys(TETROMINOES);
+    const t_type = tTypes[Math.floor(Math.random()*tTypes.length)];
+    const shape = deepCopy(TETROMINOES[t_type]);
+    const piece = {
+      type: t_type,
+      shape: shape,
+      x: Math.floor((this.cols - shape[0].length)/2),
+      y: 0
+    };
+    if(this.collides(piece)){
+      this.game_over = true;
+    }
+    return piece;
+  }
+  collides(piece){
+    const shape = piece.shape;
+    for(let r=0; r<shape.length; r++){
+      for(let c=0; c<shape[r].length; c++){
+        if(shape[r][c]){
+          const x = piece.x+c;
+          const y = piece.y+r;
+          if(x<0 || x>=this.cols || y>=this.rows){
+            return true;
+          }
+          if(y>=0 && this.board[y][x]){
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  clear_lines(){
+    const new_board = [];
+    for(let r=0; r<this.board.length; r++){
+      if(!this.board[r].every(cell => cell===1)){
+        new_board.push(this.board[r]);
+      }
+    }
+    const cleared = this.rows - new_board.length;
+    for(let i=0; i<cleared; i++){
+      new_board.unshift(new Array(this.cols).fill(0));
+    }
+    this.board = new_board;
+    this.score += cleared;
+    return cleared;
+  }
+  lock_piece(){
+    const p = this.current_piece;
+    for(let r=0; r<p.shape.length; r++){
+      for(let c=0; c<p.shape[r].length; c++){
+        if(p.shape[r][c]){
+          const x = p.x + c;
+          const y = p.y + r;
+          if(x>=0 && x<this.cols && y>=0 && y<this.rows){
+            this.board[y][x] = 1;
+          }
+        }
+      }
+    }
+    this.clear_lines();
+    this.current_piece = this.spawn_piece();
+    this.target_piece = null;
+    this.cached_moves = null;
+    this._cached_state_key = null;
+  }
+  lock_target(){
+    if(!this.target_piece) return;
+    const p = this.target_piece;
+    for(let r=0; r<p.shape.length; r++){
+      for(let c=0; c<p.shape[r].length; c++){
+        if(p.shape[r][c]){
+          const x = p.x + c;
+          const y = p.y + r;
+          if(x>=0 && x<this.cols && y>=0 && y<this.rows){
+            this.board[y][x] = 1;
+          }
+        }
+      }
+    }
+    this.clear_lines();
+    this.current_piece = this.spawn_piece();
+    this.target_piece = null;
+    this.cached_moves = null;
+    this._cached_state_key = null;
+  }
+  get_piece_center(piece=null){
+    if(!piece) piece = this.current_piece;
+    if(!piece || !piece.shape) return { x:0, y:0 };
+    const h = piece.shape.length;
+    const w = piece.shape[0].length;
+    return {
+      x: (piece.x + w/2)*CELL_SIZE,
+      y: (piece.y + h/2)*CELL_SIZE
+    };
+  }
+  get_state_key(){
+    const piece = this.current_piece;
+    const stateObj = {
+      board: this.board,
+      piece: {
+        type: piece.type,
+        shape: piece.shape,
+        x: piece.x,
+        y: piece.y
+      }
+    };
+    return JSON.stringify(stateObj);
+  }
+  get_terminal_moves(){
+    if(this.game_over){
+      return [];
+    }
+    const current_state_key = this.get_state_key();
+    if(this.cached_moves && this._cached_state_key===current_state_key){
+      return this.cached_moves;
+    }
+    const orig = this.current_piece;
+    const base_shape = TETROMINOES[orig.type];
+    const candidates = [];
+    const rotations = (orig.type==="O") ? [0] : [0,1,2,3];
+    for(let rot of rotations){
+      let shape = deepCopy(base_shape);
+      for(let i=0; i<rot; i++){
+        shape = rotateMatrix(shape);
+      }
+      const w = shape[0].length;
+      for(let x=0; x<=this.cols-w; x++){
+        const testPiece = {
+          type: orig.type,
+          shape: deepCopy(shape),
+          x: x,
+          y: 0
+        };
+        if(this.collides(testPiece)){
+          continue;
+        }
+        let y=0;
+        while(!this.collides({...testPiece, y:y}) && y<this.rows){
+          y++;
+        }
+        testPiece.y = y-1;
+        if(testPiece.y<0) continue;
+        const center = this.get_piece_center(testPiece);
+        const action_key = `r${rot}_x${x}`;
+        candidates.push({
+          action_key: action_key,
+          piece: testPiece,
+          piece_center: center
+        });
+      }
+    }
+    this.cached_moves = candidates;
+    this._cached_state_key = current_state_key;
+    return candidates;
+  }
+  tick(){
+    if(this.game_over) return;
+    if(this.target_piece){
+      this.current_piece.shape = deepCopy(this.target_piece.shape);
+      this.cached_moves = null;
+      this._cached_state_key = null;
+      const px = this.current_piece.x;
+      const py = this.current_piece.y;
+      const tx = this.target_piece.x;
+      const ty = this.target_piece.y;
+      if(px<tx) this.current_piece.x++;
+      else if(px>tx) this.current_piece.x--;
+      if(py<ty) this.current_piece.y++;
+      else if(py>ty) this.current_piece.y--;
+      if(this.current_piece.x===tx && this.current_piece.y===ty){
+        this.lock_target();
+      }
+    } else {
+      const nextP = {
+        type: this.current_piece.type,
+        shape: this.current_piece.shape,
+        x: this.current_piece.x,
+        y: this.current_piece.y+1
+      };
+      if(!this.collides(nextP)){
+        this.current_piece.y++;
+      } else {
+        this.lock_piece();
+      }
+    }
+  }
+  is_over(){
+    return this.game_over;
+  }
+  get_final_reward(){
+    if(this.game_over){
+      return this.score*10 - 10;
+    } else {
+      return this.score*10;
+    }
+  }
+}
+
+// ====================== TRAJECTORY BALANCE AGENT ======================
+class TrajectoryBalanceAgent {
+  constructor(lr=0.01){
+    this.log_flows = {};
+    this.logZ = 0.0;
+    this.lr = lr;
+  }
+  _ensure_action_exists(state_key, action_key){
+    if(!this.log_flows[state_key]){
+      this.log_flows[state_key] = {};
+    }
+    if(!this.log_flows[state_key][action_key]){
+      const val = 0.5 + Math.random();
+      this.log_flows[state_key][action_key] = Math.log(val);
+    }
+  }
+  sample_action(state_key, candidates){
+    for(let c of candidates){
+      this._ensure_action_exists(state_key, c.action_key);
+    }
+    const logValues = candidates.map(c => this.log_flows[state_key][c.action_key]);
+    const max_log = Math.max(...logValues);
+    const exps = logValues.map(lv => Math.exp(lv - max_log));
+    const sum_exps = exps.reduce((a,b)=>a+b,0);
+    const probs = exps.map(e=> e/sum_exps);
+    const r = Math.random();
+    let cum=0, idx=0;
+    for(let i=0; i<probs.length; i++){
+      cum += probs[i];
+      if(r<=cum){
+        idx=i; break;
+      }
+    }
+    return [candidates[idx], probs[idx]];
+  }
+  get_log_p_action(state_key, action_key){
+    this._ensure_action_exists(state_key, action_key);
+    const all_logs = Object.values(this.log_flows[state_key]);
+    const max_val = Math.max(...all_logs);
+    const sum_exp = all_logs.reduce((acc,x)=> acc+Math.exp(x - max_val), 0);
+    const denom = Math.log(sum_exp)+max_val;
+    const numerator = this.log_flows[state_key][action_key];
+    return numerator - denom;
+  }
+  update_trajectory(traj, final_reward){
+    if(final_reward<=0) final_reward=0.01;
+    const logR = Math.log(final_reward);
+    let sum_logp=0;
+    for(let [s,a] of traj){
+      sum_logp += this.get_log_p_action(s,a);
+    }
+    const target = logR - this.logZ;
+    const diff = sum_logp - target;
+    // update logZ
+    this.logZ += this.lr*diff;
+    // update flows
+    for(let [s,a] of traj){
+      this.log_flows[s][a] -= this.lr*diff;
+    }
+  }
+  loadFromJSON(obj){
+    try {
+      this.log_flows = obj.log_flows || {};
+      this.logZ = obj.logZ || 0.0;
+      console.log("[agent] Loaded from JSON. (#states=", Object.keys(this.log_flows).length, ", logZ=", this.logZ, ")");
+    } catch(e){
+      console.error("[agent] Error loading from JSON:", e);
+    }
+  }
+}
+
+// ====================== VISUAL EFFECTS ======================
+class Particle {
+  constructor(x,y,vx,vy,radius=4,life=1.0,color={r:255,g:255,b:255}){
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy;
+    this.radius=radius; this.life=life; this.color=color;
+  }
+  update(dt){
+    this.x += this.vx*dt;
+    this.y += this.vy*dt;
+    this.life -= dt*0.4;
+  }
+  draw(ctx){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
+    let grad=ctx.createRadialGradient(this.x,this.y,this.radius/2,this.x,this.y,this.radius);
+    grad.addColorStop(0,`rgba(${this.color.r},${this.color.g},${this.color.b},${this.life})`);
+    grad.addColorStop(1,`rgba(${this.color.r},${this.color.g},${this.color.b},0)`);
+    ctx.fillStyle=grad;
+    ctx.fill();
+  }
+}
+class Arrow {
+  constructor(from,to,flow,color="#66ff66"){
+    this.from=from; this.to=to; this.flow=flow; this.color=color;
+    this.life=1.0;
+  }
+  update(dt){
+    this.life -= dt*0.5;
+  }
+  draw(ctx){
+    const rgb=hexToRgb(this.color);
+    let lineWidth = Math.min(10, 2+this.flow/2000);
+    ctx.strokeStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.8*this.life})`;
+    ctx.lineWidth=lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(this.from.x,this.from.y);
+    ctx.lineTo(this.to.x,this.to.y);
+    ctx.stroke();
+    let angle=Math.atan2(this.to.y - this.from.y,this.to.x - this.from.x);
+    ctx.beginPath();
+    ctx.moveTo(this.to.x,this.to.y);
+    ctx.lineTo(this.to.x - 10*Math.cos(angle - Math.PI/6),
+               this.to.y - 10*Math.sin(angle - Math.PI/6));
+    ctx.lineTo(this.to.x - 10*Math.cos(angle + Math.PI/6),
+               this.to.y - 10*Math.sin(angle + Math.PI/6));
+    ctx.closePath();
+    ctx.fillStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.8*this.life})`;
+    ctx.fill();
+  }
+}
+
+// ====================== "API" LOGIC (FRONT-END) ======================
+function getCandidateMoves(){
+  if(game.is_over()){
+    return {
+      current_piece_center: game.get_piece_center(),
+      terminal_moves: [],
+      game_state: {
+        board: game.board,
+        current_piece: game.current_piece,
+        score: game.score,
+        game_over: game.game_over
+      }
+    };
+  }
+  const state_key = game.get_state_key();
+  const cands = game.get_terminal_moves();
+  const result=[];
+  let sum_exp=0;
+  for(let c of cands){
+    agent._ensure_action_exists(state_key,c.action_key);
+    const val=Math.exp(agent.log_flows[state_key][c.action_key]);
+    sum_exp += val;
+  }
+  for(let c of cands){
+    const flow_val=Math.exp(agent.log_flows[state_key][c.action_key]);
+    const prob = (sum_exp>0)? flow_val/sum_exp : (1.0/cands.length);
+    c.flow=flow_val; 
+    c.probability=prob;
+    result.push(c);
+  }
+  return {
+    current_piece_center: game.get_piece_center(),
+    terminal_moves: result,
+    game_state: {
+      board: game.board,
+      current_piece: game.current_piece,
+      score: game.score,
+      game_over: game.game_over
+    }
+  };
+}
+function selectMove(actionKey=null){
+  if(game.is_over()){
+    return { error:"Game Over" };
+  }
+  const cands = game.get_terminal_moves();
+  if(!cands || cands.length===0){
+    return { error:"No moves" };
+  }
+  const state_key = game.get_state_key();
+  let selected_action=null;
+  if(actionKey){
+    selected_action = cands.find(x=>x.action_key===actionKey) || null;
+  }
+  if(!selected_action){
+    const [cand,_p] = agent.sample_action(state_key, cands);
+    selected_action=cand;
+  }
+  trajectory.push([state_key,selected_action.action_key]);
+  game.target_piece = deepCopy(selected_action.piece);
+  const arrow_info={
+    from: game.get_piece_center(game.current_piece),
+    to: selected_action.piece_center,
+    flow: 0.0,
+    probability: 0.0
+  };
+  return {
+    action_key: selected_action.action_key,
+    arrow: arrow_info,
+    game_state:{
+      board: game.board,
+      current_piece: game.current_piece,
+      score: game.score,
+      game_over: game.game_over,
+      piece_id: game.piece_id
+    }
+  };
+}
+function tickGameLogic(){
+  const old_go=game.is_over();
+  const old_pid=game.piece_id;
+  game.tick();
+  const new_go=game.is_over();
+  const new_pid=game.piece_id;
+  if(new_go && !old_go){
+    const final_reward=game.get_final_reward();
+    agent.update_trajectory(trajectory, final_reward);
+    trajectory=[];
+    game.reset_game();
+  }
+  let terminal_moves=[];
+  if(new_pid!==old_pid && !game.is_over()){
+    const state_key=game.get_state_key();
+    const cands=game.get_terminal_moves();
+    let sum_exp=0;
+    for(let c of cands){
+      agent._ensure_action_exists(state_key,c.action_key);
+      sum_exp+= Math.exp(agent.log_flows[state_key][c.action_key]);
+    }
+    for(let c of cands){
+      const fv=Math.exp(agent.log_flows[state_key][c.action_key]);
+      const prob = sum_exp>0 ? fv/sum_exp : (1.0/cands.length);
+      c.flow=fv; 
+      c.probability=prob;
+      terminal_moves.push(c);
+    }
+  }
+  return {
+    game_state:{
+      board: game.board,
+      current_piece: game.current_piece,
+      score: game.score,
+      game_over: game.game_over,
+      piece_id: game.piece_id
+    },
+    current_piece_center: game.get_piece_center(),
+    terminal_moves: terminal_moves
+  };
+}
+function resetGameLogic(){
+  game.reset_game();
+  trajectory=[];
+  return {status:"reset"};
+}
+
+// ====================== UI & ANIMATION ======================
+function assignCandidateColors(candidates){
+  candidates.forEach((cand,i)=>{
+    if(i===0) cand.color="#33ff66";
+    else if(i===1) cand.color="#ffd700";
+    else if(i===2) cand.color="#ff6666";
+    else cand.color="#dddddd";
+  });
+}
+function drawBoard(gs){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#222";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(!gs||!gs.board) return;
+  for(let r=0; r<ROWS; r++){
+    for(let c=0; c<COLS; c++){
+      if(gs.board[r][c]){
+        ctx.fillStyle="#666";
+        ctx.fillRect(c*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE);
+        ctx.strokeStyle="#444";
+        ctx.strokeRect(c*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE);
+      } else {
+        ctx.strokeStyle="rgba(255,255,255,0.05)";
+        ctx.strokeRect(c*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE);
+      }
+    }
+  }
+}
+function drawCurrentPiece(gs){
+  if(!gs||!gs.current_piece) return;
+  const piece = gs.current_piece;
+  let grad=ctx.createLinearGradient(0,0,0,piece.shape.length*CELL_SIZE);
+  grad.addColorStop(0,"#c0c0c0");
+  grad.addColorStop(1,"#a0a0a0");
+  ctx.fillStyle=grad;
+  for(let r=0; r<piece.shape.length; r++){
+    for(let c=0; c<piece.shape[r].length; c++){
+      if(piece.shape[r][c]){
+        const x=(piece.x+c)*CELL_SIZE;
+        const y=(piece.y+r)*CELL_SIZE;
+        ctx.fillRect(x,y,CELL_SIZE,CELL_SIZE);
+        ctx.strokeStyle="#888";
+        ctx.strokeRect(x,y,CELL_SIZE,CELL_SIZE);
+      }
+    }
+  }
+}
+function drawCandidateShadow(piece,color){
+  if(!piece||!piece.shape)return;
+  ctx.save();
+  const rgb=hexToRgb(color||"#fff");
+  ctx.fillStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},0.2)`;
+  for(let r=0; r<piece.shape.length; r++){
+    for(let c=0; c<piece.shape[r].length; c++){
+      if(piece.shape[r][c]){
+        const x=(piece.x+c)*CELL_SIZE;
+        const y=(piece.y+r)*CELL_SIZE;
+        ctx.fillRect(x,y,CELL_SIZE,CELL_SIZE);
+      }
+    }
+  }
+  ctx.restore();
+}
+function spawnParticles(from,to,factor=1,color){
+  let count=Math.max(1,Math.round(7*factor));
+  let dx=to.x-from.x;
+  let dy=to.y-from.y;
+  let dist=Math.hypot(dx,dy)||1;
+  let ux=dx/dist;
+  let uy=dy/dist;
+  let baseColor=color?hexToRgb(color):{r:255,g:255,b:255};
+  for(let i=0; i<count; i++){
+    const t=Math.random();
+    const x=from.x+dx*t;
+    const y=from.y+dy*t;
+    let speed=30+Math.random()*20;
+    let vx=ux*speed+(Math.random()-0.5)*10;
+    let vy=uy*speed+(Math.random()-0.5)*10;
+    particles.push(new Particle(x,y,vx,vy,4,1.0,baseColor));
+  }
+}
+function spawnArrow(from,to,flow,color){
+  appliedArrows.push(new Arrow(from,to,flow,color));
+}
+function drawEffects(){
+  appliedArrows.forEach(a=>a.draw(ctx));
+  particles.forEach(p=>p.draw(ctx));
+}
+function draw(){
+  drawBoard(currentGameState);
+  drawCurrentPiece(currentGameState);
+  topCandidates.forEach(c=>{
+    let arr=new Arrow(currentPieceCenter,c.piece_center,c.flow,c.color);
+    arr.draw(ctx);
+    drawCandidateShadow(c.piece,c.color);
+  });
+  drawEffects();
+}
+function animate(){
+  let now=performance.now();
+  let dt=(now - lastTime)/1000;
+  lastTime=now;
+
+  particleSpawnAccumulator+=dt;
+  if(particleSpawnAccumulator>0.25){
+    if(topCandidates.length>0){
+      let maxFlow=topCandidates[0].flow||1;
+      topCandidates.forEach((cand,i)=>{
+        let ratio=cand.flow/maxFlow;
+        if(i===0) ratio*=3;
+        else if(i===1) ratio*=1.5;
+        else if(i===2) ratio*=0.5;
+        spawnParticles(currentPieceCenter,cand.piece_center,ratio,cand.color);
+      });
+    }
+    particleSpawnAccumulator=0;
+  }
+
+  for(let i=particles.length-1; i>=0; i--){
+    particles[i].update(dt);
+    if(particles[i].life<=0){
+      particles.splice(i,1);
+    }
+  }
+  appliedArrows.forEach(a=>a.update(dt));
+  draw();
+  requestAnimationFrame(animate);
+}
+
+// ====================== FRONT-END "ENDPOINTS" ======================
+function fetchCandidateMoves(){
+  if(simulationPaused) return;
+  const data=getCandidateMoves();
+  currentGameState=data.game_state || {};
+  currentPieceCenter=data.current_piece_center || {x:0,y:0};
+  candidateMoves=data.terminal_moves || [];
+  candidateMoves.sort((a,b)=>b.flow - a.flow);
+  topCandidates=candidateMoves.slice(0,3);
+  assignCandidateColors(topCandidates);
+  updateCandidateListUI();
+  // auto-select the top candidate if it exists
+  const firstCandidateEl = candidateListEl.querySelector(".candidate");
+  if(firstCandidateEl){
+    firstCandidateEl.click();
+  }
+}
+function doSelectCandidate(actionKey){
+  simulationPaused=true;
+  const data = selectMove(actionKey);
+  if(data.error){
+    console.error("[doSelectCandidate] error:", data.error);
+    simulationPaused=false;
+    return;
+  }
+  if(data.arrow){
+    let arrowData=data.arrow;
+    let cand=topCandidates.find(c=>
+      Math.abs(c.piece_center.x - arrowData.to.x)<1 &&
+      Math.abs(c.piece_center.y - arrowData.to.y)<1
+    );
+    let color=cand?cand.color:"#33ff66";
+    spawnArrow(arrowData.from, arrowData.to, arrowData.flow, color);
+  }
+  currentGameState=data.game_state||{};
+  setTimeout(()=>{ simulationPaused=false; }, MOVE_PAUSE_DURATION);
+}
+function tickGame(){
+  if(!simulationPaused){
+    const data=tickGameLogic();
+    currentGameState=data.game_state||{};
+    currentPieceCenter=data.current_piece_center||{x:0,y:0};
+    const newPieceId=currentGameState.piece_id;
+    if(typeof newPieceId!=="undefined" && newPieceId!==lastPieceId){
+      lastPieceId=newPieceId;
+      setTimeout(fetchCandidateMoves,200);
+    }
+  }
+}
+function doResetGame(){
+  resetGameLogic();
+  currentGameState=null;
+  currentPieceCenter={x:0,y:0};
+  candidateMoves=[];
+  topCandidates=[];
+  appliedArrows=[];
+  particles=[];
+  simulationPaused=false;
+  lastPieceId=null;
+  candidateListEl.innerHTML="";
+  fetchCandidateMoves();
+}
+function updateCandidateListUI(){
+  candidateListEl.innerHTML="";
+  topCandidates.forEach((c,i)=>{
+    let div=document.createElement("div");
+    div.className="candidate";
+    div.style.borderLeft=`10px solid ${c.color}`;
+    div.innerHTML=`
+      <h3>${c.action_key}</h3>
+      <p>Flow: ${c.flow.toFixed(2)}</p>
+      <p>Prob: ${(c.probability*100).toFixed(1)}%</p>
+    `;
+    div.onclick=()=>doSelectCandidate(c.action_key);
+    candidateListEl.appendChild(div);
+  });
+}
+
+// ====================== INIT FUNCTION ======================
+function init(){
+  console.log("[init] Starting front-end Tetris GFlowNet...");
+  canvas=document.getElementById("tetrisCanvas");
+  ctx=canvas.getContext("2d");
+  candidateListEl=document.getElementById("candidateList");
+  resetBtn=document.getElementById("resetBtn");
+
+  // Create Tetris + Agent
+  game=new TetrisGame();
+  agent=new TrajectoryBalanceAgent(0.02);
+
+  // Attempt to load from pretrained_flows_tb.json
+  console.log("[init] Attempting to fetch pretrained_flows_tb.json...");
+  fetch("pretrained_flows_tb.json")
+    .then(resp=>{
+      if(!resp.ok){
+        throw new Error(`Could not fetch JSON: ${resp.status} ${resp.statusText}`);
+      }
+      return resp.json();
+    })
+    .then(jsonData=>{
+      console.log("[init] Successfully loaded pretrained_flows_tb.json!");
+      agent.loadFromJSON(jsonData);
+    })
+    .catch(err=>{
+      console.warn("[init] Could NOT load pretrained_flows_tb.json, continuing with random flows:", err);
+    })
+    .finally(()=>{
+      // Start game loop
+      console.log("[init] Starting game loop now...");
+      setInterval(tickGame, TICK_INTERVAL);
+      fetchCandidateMoves();
+      resetBtn.addEventListener("click", doResetGame);
+      requestAnimationFrame(animate);
+    });
+}
+
+// ====================== DOMContentLoaded ======================
+document.addEventListener("DOMContentLoaded", init);
+</script>
+
+<!-- 
+   (Line 1670) Final JavaScript for Nav Menu and Sticky Arrow
+-->
+<script>
+function toggleNavMenu() {
+  const nav = document.getElementById('mainNav');
+  nav.classList.toggle('show');
+}
+function scrollDown() {
+  window.scrollBy({
+    top: window.innerHeight,
+    left: 0,
+    behavior: 'smooth'
+  });
+}
+
+/* Intersection observer to highlight sections */
+document.addEventListener("DOMContentLoaded", () => {
+  const sections = document.querySelectorAll("main section");
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("active");
+      } else {
+        entry.target.classList.remove("active");
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(section => observer.observe(section));
+
+
+});
+</script>
+
+<!-- 
+   (Line 1699) Particle JS config
+   We'll set up the background so it looks dynamic. 
+-->
+<script>
+particlesJS("particles-js", {
+  particles: {
+    number: { value: 60, density: { enable: true, value_area: 800 } },
+    color: { value: "#00bfff" },
+    shape: {
+      type: "circle",
+      stroke: { width: 0, color: "#000" },
+      polygon: { nb_sides: 5 }
+    },
+    opacity: { value: 0.5, random: true },
+    size: { value: 3, random: true },
+    line_linked: {
+      enable: true,
+      distance: 150,
+      color: "#00bfff",
+      opacity: 0.4,
+      width: 1
+    },
+    move: {
+      enable: true,
+      speed: 2,
+      direction: "none",
+      random: false,
+      straight: false,
+      out_mode: "out"
+    }
+  },
+  interactivity: {
+    detect_on: "canvas",
+    events: {
+      onhover: { enable: false },
+      onclick: { enable: false }
+    }
+  },
+  retina_detect: true
+});
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+      ]
+    });
+  });
+  </script>
+
+<!-- Navigation toggle and IntersectionObserver -->
+<script>
+  function toggleNavMenu() {
+    const nav = document.getElementById('mainNav');
+    nav.classList.toggle('show');
+  }
+  function scrollDown() {
+    window.scrollBy({
+      top: window.innerHeight,
+      left: 0,
+      behavior: 'smooth'
+    });
+  }
+  
+  // Close nav on link click
+  document.addEventListener("DOMContentLoaded", () => {
+
+  
+    const sections = document.querySelectorAll("main section");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+        } else {
+          entry.target.classList.remove("active");
+        }
+      });
+    }, { threshold: 0.3 });
+    sections.forEach(section => observer.observe(section));
+  });
+  </script>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<svg id="moleculeFlowSVG" width="1000" height="600"></svg>
+<div id="flowTooltipBig" style="position:absolute; background:#333; color:#fff;
+                                padding:6px; border-radius:4px; pointer-events:none; opacity:0;">
+</div>
+
+
+  
+
+
+</body>
+</html>

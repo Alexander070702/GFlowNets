@@ -251,62 +251,124 @@ class TetrisGame:
         return self.game_over
 
     def get_final_reward(self):
-        if self.game_over:
-            return self.score * 10 - 10
-        else:
-            return self.score * 10
+        # non-linear function that rewards higher scores more strongly.
+        # square the (score + 1) to ensure it is always positive
+        # and to give extra bonus for clearing more lines.
+        return (self.score + 1) ** 2
+
 
 # ------------------ Trajectory-Balance GFlowNet Agent ------------------ #
 class TrajectoryBalanceAgent:
     def __init__(self, lr=0.01):
+        # log_flows will store the logarithm of flow values for each state-action pair.
+        # It is a dictionary where keys are state keys (strings) and values are dictionaries
+        # mapping action keys to log flow values.
         self.log_flows = {}
+
+        # logZ is the logarithm of the normalization constant (partition function).
+        # It helps in normalizing the probabilities across all actions in a state.
         self.logZ = 0.0
+
+        # Learning rate determines how much we adjust our parameters (log flows and logZ)
+        # during the update after each trajectory.
         self.lr = lr
 
     def _ensure_action_exists(self, state_key, action_key):
+        """
+        This helper function checks whether a particular state-action pair already exists in our log_flows.
+        If it doesn't, we initialize it with a default log flow value.
+        """
+        # If the state key is not already in our log_flows, create an empty dictionary for it.
         if state_key not in self.log_flows:
             self.log_flows[state_key] = {}
+        # If the action_key for that state does not exist, initialize it with a random log flow value.
+        # We use math.log(0.5 + random.random()) to get a value that is not too low,
+        # ensuring a decent starting point for each new action.
         if action_key not in self.log_flows[state_key]:
             self.log_flows[state_key][action_key] = math.log(0.5 + random.random())
 
     def sample_action(self, state_key, candidates):
+        """
+        Given a state (represented by state_key) and a list of candidate actions (each a dictionary),
+        this function samples one action based on the current log flow values.
+        The idea is to convert log flows into probabilities and then randomly select an action.
+        """
+        # First, make sure that every candidate action has an entry in the log_flows dictionary.
         for c in candidates:
             self._ensure_action_exists(state_key, c['action_key'])
+        
+        # Extract the log flow values for each candidate action.
         log_values = [self.log_flows[state_key][c['action_key']] for c in candidates]
+        # For numerical stability, subtract the maximum log value from all log values.
         max_log = max(log_values)
+        # Convert log flows to actual flows by exponentiating the difference.
         exps = [math.exp(lv - max_log) for lv in log_values]
+        # Sum these exponentials to compute the normalizing constant.
         sum_exps = sum(exps)
-        probs = [e/sum_exps for e in exps]
-        r = random.random()
+        # Now, compute the probability for each candidate by dividing its exponential by the total.
+        probs = [e / sum_exps for e in exps]
+        
+        # Sample one candidate according to the probability distribution.
+        r = random.random()  # A random number between 0 and 1.
         cum = 0.0
         idx = 0
+        # Go through each candidate's probability, accumulating until we exceed the random threshold.
         for i, p in enumerate(probs):
             cum += p
             if r <= cum:
                 idx = i
                 break
+        
+        # Return the selected candidate and its probability.
         return candidates[idx], probs[idx]
 
     def get_log_p_action(self, state_key, action_key):
+        """
+        Computes the log probability of taking a given action at a given state.
+        This is done by normalizing the log flow for that action against the flows of all actions in the state.
+        """
+        # Ensure that the given state-action pair exists.
         self._ensure_action_exists(state_key, action_key)
+        # Get a list of all log flow values for the actions available in this state.
         all_logs = list(self.log_flows[state_key].values())
+        # For numerical stability, subtract the maximum log value from each.
         max_val = max(all_logs)
+        # Compute the denominator in log-space: log(sum(exp(x - max_val))) + max_val.
         denom = math.log(sum(math.exp(x - max_val) for x in all_logs)) + max_val
+        # Get the log flow for the specified action.
         numerator = self.log_flows[state_key][action_key]
+        # Return the difference, which is the log probability.
         return numerator - denom
 
     def update_trajectory(self, trajectory, final_reward):
+        """
+        After a complete trajectory (i.e., a full sequence of moves from start to terminal state) is observed,
+        this function updates the log flows (and the normalization constant logZ) using the Trajectory Balance (TB)
+        principle. The idea is to make the total log probability of the trajectory approach the log of the final reward.
+        """
+        # Avoid log(0) issues: if the final reward is non-positive, set it to a small positive value.
         if final_reward <= 0:
             final_reward = 0.01
+        # Compute the logarithm of the final reward.
         logR = math.log(final_reward)
+        # Compute the sum of the log probabilities for all (state, action) pairs in the trajectory.
         sum_logp = sum(self.get_log_p_action(s, a) for (s, a) in trajectory)
+        # The target is defined as the difference between the log reward and the current log normalization constant.
         target = logR - self.logZ
+        # The difference (error) is how much the trajectory's log probability sum deviates from the target.
         diff = sum_logp - target
+        # Update the normalization constant logZ by moving it a little (scaled by the learning rate) in the direction of reducing diff.
         self.logZ += self.lr * diff
+        # For each (state, action) in the trajectory, update its log flow by subtracting a fraction of the difference.
+        # This adjustment makes the overall trajectory probability closer to what it should be.
         for (s, a) in trajectory:
             self.log_flows[s][a] -= self.lr * diff
 
     def save(self, fname):
+        """
+        Saves the agent's internal parameters (log_flows and logZ) to a file in JSON format.
+        This is useful for persisting the learned model between runs.
+        """
         data = {
             "log_flows": {
                 s: {a: lf for a, lf in adict.items()}
@@ -318,6 +380,10 @@ class TrajectoryBalanceAgent:
             json.dump(data, f)
 
     def load(self, fname):
+        """
+        Loads the agent's internal parameters from a JSON file.
+        If an error occurs during loading, it prints an error message.
+        """
         try:
             with open(fname, "r") as f:
                 data = json.load(f)
