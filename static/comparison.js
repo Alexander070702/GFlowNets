@@ -1,5 +1,5 @@
 function initComparisonChart() {
-  const container = d3.select("#chart");
+  const container = d3.select("#comparisonChart");
   const width = 200, height = 300;
 
   // Mock data for Traditional (single path)
@@ -39,6 +39,11 @@ function initComparisonChart() {
     ]
   };
 
+  // 1) Center each dataset's nodes so they occupy the middle of 200×300
+  centerData(leftData, width, height);
+  centerData(rightData, width, height);
+
+  // 2) Create two separate SVGs side by side
   const svgLeft = container.append("svg")
     .attr("width", width)
     .attr("height", height);
@@ -47,7 +52,7 @@ function initComparisonChart() {
     .attr("width", width)
     .attr("height", height);
 
-  // Arrow marker for edges
+  // 3) Define arrow marker in both SVGs
   [svgLeft, svgRight].forEach(svg => {
     svg.append("defs").append("marker")
       .attr("id", "arrow")
@@ -62,8 +67,67 @@ function initComparisonChart() {
       .attr("fill", "#bbb");
   });
 
+  // 4) Draw each DAG
+  const edgesLeft = drawDAG(svgLeft, leftData, "Traditional");
+  const edgesRight = drawDAG(svgRight, rightData, "GFlowNet");
+
+  // 5) Simple animation
+  let step = 0;
+  d3.interval(() => {
+    step = (step + 1) % 6;
+
+    // For the “Traditional” DAG, highlight path in two segments
+    edgesLeft
+      .transition().duration(500)
+      .attr("stroke-width", d => {
+        const a_e = (step < 3 && d.source === "A" && d.target === "E");
+        const e_h = (step >= 3 && d.source === "E" && d.target === "H");
+        return (a_e || e_h) ? 6 : 2;
+      })
+      .attr("stroke", d => {
+        const a_e = (step < 3 && d.source === "A" && d.target === "E");
+        const e_h = (step >= 3 && d.source === "E" && d.target === "H");
+        return (a_e || e_h) ? "#ff6666" : "#bbb";
+      });
+
+    // For the “GFlowNet” DAG, highlight multiple edges after step≥3
+    edgesRight
+      .transition().duration(500)
+      .attr("stroke-width", step >= 3 ? 5 : 2)
+      .attr("stroke", step >= 3 ? "#00bfff" : "#bbb");
+  }, 1200);
+
+  /**
+   * centerData(data, w, h):
+   * Finds the bounding box of the given nodes’ (x,y) and
+   * shifts them so that everything is centered in [0..w]×[0..h].
+   */
+  function centerData(data, w, h) {
+    const xs = data.nodes.map(d => d.x);
+    const ys = data.nodes.map(d => d.y);
+    const minX = d3.min(xs), maxX = d3.max(xs);
+    const minY = d3.min(ys), maxY = d3.max(ys);
+    const dagWidth = maxX - minX;
+    const dagHeight = maxY - minY;
+
+    // how much to shift so that the bounding box is in the center
+    const offsetX = (w - dagWidth) / 2 - minX;
+    const offsetY = (h - dagHeight) / 2 - minY;
+
+    // update each node’s x,y
+    data.nodes.forEach(node => {
+      node.x += offsetX;
+      node.y += offsetY;
+    });
+  }
+
+  /**
+   * drawDAG(svg, data, title):
+   *   Adds a title, draws edges (with marker-end arrow), draws nodes & labels.
+   *   Returns the selection of edges for later transitions.
+   */
   function drawDAG(svg, data, title) {
-    // Title text
+    // Title
     svg.append("text")
       .attr("x", width / 2)
       .attr("y", 20)
@@ -71,7 +135,7 @@ function initComparisonChart() {
       .attr("fill", "#fff")
       .text(title);
 
-    // Draw edges
+    // Edges
     const edges = svg.selectAll(".edge")
       .data(data.edges)
       .enter().append("line")
@@ -84,7 +148,7 @@ function initComparisonChart() {
       .attr("stroke-width", 2)
       .attr("marker-end", "url(#arrow)");
 
-    // Draw nodes
+    // Nodes
     svg.selectAll(".node")
       .data(data.nodes)
       .enter().append("circle")
@@ -94,7 +158,7 @@ function initComparisonChart() {
       .attr("cy", d => d.y)
       .attr("fill", "#ccc");
 
-    // Label nodes
+    // Labels
     svg.selectAll(".label")
       .data(data.nodes)
       .enter().append("text")
@@ -107,35 +171,4 @@ function initComparisonChart() {
 
     return edges;
   }
-
-  // Render the two DAGs
-  const edgesLeft = drawDAG(svgLeft, leftData, "Traditional");
-  const edgesRight = drawDAG(svgRight, rightData, "GFlowNet");
-
-  // Simple animation to highlight edges
-  let step = 0;
-  d3.interval(() => {
-    step = (step + 1) % 6;
-
-    // Left: single path thickens in two steps
-    edgesLeft
-      .transition().duration(500)
-      .attr("stroke-width", d => {
-        // Highlight A->E for first half, then E->H for second
-        const a_e = (step < 3 && d.source === "A" && d.target === "E");
-        const e_h = (step >= 3 && d.source === "E" && d.target === "H");
-        return (a_e || e_h) ? 6 : 2;
-      })
-      .attr("stroke", d => {
-        const a_e = (step < 3 && d.source === "A" && d.target === "E");
-        const e_h = (step >= 3 && d.source === "E" && d.target === "H");
-        return (a_e || e_h) ? "#ff6666" : "#bbb";
-      });
-
-    // Right: highlight multiple edges after step >= 3
-    edgesRight
-      .transition().duration(500)
-      .attr("stroke-width", step >= 3 ? 5 : 2)
-      .attr("stroke", step >= 3 ? "#00bfff" : "#bbb");
-  }, 1200);
 }

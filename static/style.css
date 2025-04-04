@@ -837,3 +837,299 @@ html{
     margin: 0 !important;
   }
 }
+
+
+/* (Line 1) Basic Reset & Layout */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #111;
+  color: #eee;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+/* (Line 20) Headings & Text */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #00bfff;
+}
+h1 {
+  font-size: 2rem;
+  margin-top: 80px;
+  text-align: center;
+  color: #00bfff;
+}
+h2 {
+  margin-top: 40px;
+  color: #fefefe;
+}
+p, li {
+  margin-bottom: 10px;
+}
+a {
+  color: #00bfff;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+em {
+  font-style: italic;
+}
+code {
+  background: rgba(255,255,255,0.07);
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+}
+pre {
+  background: rgba(255,255,255,0.1);
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 15px 0;
+}
+/* (Line 50) Layout: main container */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  position: relative;
+  z-index: 1; /* Over the particle background */
+}
+/* (Line 60) Sections styling */
+section {
+  margin-bottom: 100px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 6px;
+  padding: 20px;
+  transition: all 0.4s ease;
+}
+section.active {
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.section-content {
+  margin: 0 10px;
+}
+
+/* (Line 75) Particle Background Container */
+#particles-js {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -10; /* behind everything */
+}
+
+/* (Line 80) Header & Burger Menu */
+header {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 9999;
+}
+.burger {
+  width: 30px;
+  height: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.burger span {
+  display: block;
+  height: 4px;
+  background: #fff;
+  border-radius: 2px;
+}
+
+/* (Line 100) Navigation (sidebar) */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background: rgba(0,0,0,0.9);
+  transform: translateX(-270px);
+  transition: transform 0.3s ease;
+  padding: 60px 20px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+nav.show {
+  transform: translateX(0);
+}
+.nav-menu {
+  list-style: none;
+}
+.nav-menu li {
+  margin-bottom: 15px;
+}
+.nav-menu a {
+  color: #eee;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.nav-menu a:hover {
+  text-decoration: underline;
+}
+
+/* (Line 125) The big page title H1 in the center */
+h1 {
+  margin-top: 120px;
+  color: #00bfff;
+  text-align: center;
+  font-size: 2.4rem;
+}
+
+/* (Line 130) Sticky Arrow */
+.sticky-arrow {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #333;
+  color: #fff;
+  padding: 12px 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  z-index: 9999;
+  text-align: center;
+  line-height: 1;
+  transition: background 0.3s;
+}
+.sticky-arrow:hover {
+  background: #444;
+}
+
+/* (Line 145) Tetris container */
+#tetris-game .container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+}
+#tetris-game .board {
+  flex: 0 0 auto;
+}
+#tetris-game .sidebar {
+  flex: 0 0 auto;
+  min-width: 200px;
+  max-width: 280px;
+  background: rgba(0,0,0,0.3);
+  padding: 15px;
+  border-radius: 6px;
+}
+#tetrisCanvas {
+  background: #222;
+  border: 2px solid #444;
+  display: block;
+}
+
+/* (Line 165) Candidate moves list */
+#candidateList {
+  margin-top: 10px;
+}
+.candidate {
+  background: rgba(255,255,255,0.08);
+  border-radius: 5px;
+  padding: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.candidate:hover {
+  background: rgba(255,255,255,0.15);
+}
+.controls button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: #00bfff;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #111;
+}
+.controls button:hover {
+  opacity: 0.85;
+}
+
+/* (Line 185) Collapsible details */
+details {
+  background: rgba(255,255,255,0.07);
+  padding: 10px;
+  border-radius: 5px;
+  margin: 20px 0;
+}
+details summary {
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary:before {
+  content: '► ';
+  color: #ffcc00;
+}
+details[open] summary:before {
+  content: '▼ ';
+  color: #ffcc00;
+}
+
+/* (Line 200) Reference lists */
+.references {
+  margin-top: 25px;
+  background: rgba(255,255,255,0.04);
+  padding: 10px;
+  border-radius: 5px;
+}
+.references h3 {
+  margin-bottom: 10px;
+}
+.references ul, .references ol {
+  margin-left: 20px;
+}
+.references li {
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+/* (Line 215) Basic placeholders for additional visuals */
+#comparisonChart, #flowConservationVis, #theoryDAG {
+  background: #222;
+  border: 2px dashed #444;
+  margin: 20px 0;
+  width: 100%;
+  height: 400px;
+  position: relative;
+  text-align: center;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* (Line 230) Footer */
+footer {
+  text-align: center;
+  padding: 20px 0;
+  margin-top: 40px;
+  background: rgba(255,255,255,0.02);
+  border-top: 1px solid #444;
+}

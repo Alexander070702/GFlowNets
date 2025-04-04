@@ -1,34 +1,31 @@
-// flow_conservation.js
-
 function initFlowConservationDemo() {
-  // Updated node definitions: renamed s5 -> xD
   const nodes = [
-    { id: "s0", x: 100,  y: 200, terminal: false, color: "#66ccff" },
-    { id: "s1", x: 250,  y: 100, terminal: false, color: "#cc66ff" },
-    { id: "s2", x: 250,  y: 200, terminal: false, color: "#ffff66" },
-    { id: "s3", x: 250,  y: 300, terminal: false, color: "#66ff66" },
-    { id: "s4", x: 400,  y: 150, terminal: false, color: "#ff66ff" },
-    { id: "xA", x: 400,  y:  50, terminal: true,  color: "#ff9999", reward: 1 },
-    { id: "xB", x: 400,  y: 250, terminal: true,  color: "#ff7777", reward: 2 },
-    { id: "xC", x: 400,  y: 350, terminal: true,  color: "#ff5555", reward: 3 },
-    { id: "xD", x: 550,  y: 200, terminal: true,  color: "#ff3333", reward: 3 }
+    { id: "s0", x: 100, y: 200, terminal: false, color: "#66ccff" },
+    { id: "s1", x: 250, y: 100, terminal: false, color: "#cc66ff" },
+    { id: "s2", x: 250, y: 200, terminal: false, color: "#0000ff" },
+    { id: "s3", x: 250, y: 300, terminal: false, color: "#66ff66" },
+    { id: "s4", x: 400, y: 200, terminal: false, color: "#ff66ff" },
+    { id: "xA", x: 400, y: 50, terminal: true, color: "#ff9999", reward: 1 },
+    { id: "xB", x: 400, y: 125, terminal: true, color: "#ff7777", reward: 2 },
+    { id: "xC", x: 400, y: 300, terminal: true, color: "#ff5555", reward: 3 },
+    { id: "xD", x: 550, y: 200, terminal: true, color: "#ff3333", reward: 3 }
   ];
 
-  // Flows remain balanced; changed the last edge to xD
   const edges = [
     { source: "s0", target: "s1", flow: 5 },
     { source: "s0", target: "s2", flow: 0.5 },
     { source: "s0", target: "s3", flow: 3 },
-    { source: "s1", target: "s4", flow: 3 },
     { source: "s1", target: "xA", flow: 2 },
-    { source: "s2", target: "xB", flow: 0.5 },
+    { source: "s1", target: "xB", flow: 3 },
+    { source: "s2", target: "s4", flow: 0.5 },
     { source: "s3", target: "xC", flow: 2 },
     { source: "s3", target: "s4", flow: 1 },
-    { source: "s4", target: "xD", flow: 4 }
+    { source: "s4", target: "xD", flow: 1.5 }
   ];
 
   // Make the SVG responsive
-  const svg = d3.select("#flowDAG")
+  const svg = d3.select("#flowConservationSVG")  // new
+
     .attr("width", null)
     .attr("height", null)
     .attr("viewBox", "0 0 600 400")
