@@ -442,10 +442,10 @@ function prepareParticleData(){
 
 let flowParticles = [];
 let particleIdCounter = 0;
-const spawnMultiplier = 0.2; // tweak to increase/decrease particle count
+const spawnMultiplier = 0.009;
 
 function spawnMoleculeParticles(dtMs) {
-  const dtSec = dtMs / 1000;
+  const dtSec = dtMs / 100; 
   edgeObjs.forEach(e => {
     // higher exponent => more particles for higher flow
     const spawnRate = Math.pow(e.flow, 2) * spawnMultiplier;
@@ -459,7 +459,7 @@ function spawnMoleculeParticles(dtMs) {
 }
 
 function createMoleculeParticle(edgeObj) {
-  const speed = 20 + edgeObj.flow * 4 + Math.random() * 8;
+  const speed = 8 + edgeObj.flow * 2 + Math.random() * 4;
   const color = (nodeMap[edgeObj.targetId] && nodeMap[edgeObj.targetId].color) || "#fff";
   const id = particleIdCounter++;
   flowParticles.push({
