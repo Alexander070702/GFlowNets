@@ -502,13 +502,22 @@ footer {
   <section id="introduction">
     <div class="section-content">
       <h2>1. Introduction: Generative Flow Networks (GFlowNets)</h2>
+      
+      <p>
+        A <strong>Generative Flow Network (GFlowNet)</strong> is a generative model 
+        that learns to produce <em>multiple</em> high-quality solutions 
+        (e.g., game moves, molecule designs) in proportion to their “reward.” 
+        In other words, it does not just chase a single best path like many 
+        <strong>traditional AI</strong> methods like reinforcement learning. Instead it maintains a 
+        <em>diverse distribution</em> over near-optimal solutions. 
+      </p>
   
       <p>
-        A <strong>GFlowNet</strong> samples <em>multiple</em> 
-        high-quality solutions in proportion to their rewards, instead of chasing only 
-        one “optimal” path. In contrast, many <strong>traditional RL</strong> methods quickly 
-        settle on a single best sequence and may ignore other near-optimal options. 
-        The short comparison below illustrates the difference:
+        Why does this matter? Because in real-world scenarios 
+        like <strong>drug discovery</strong> or <strong>Tetris</strong>, you often want a <em>range</em> of 
+        strong candidates. This way you can explore them all in parallel in the real world, if one fails another one might succeed. GFlowNets handle 
+        this by learning to <em>flow</em> probability across all good options, which 
+        leads to broader exploration and <strong>robustness</strong> when conditions change.
       </p>
   
       <!-- Comparison Chart: single-path vs. multi-path -->
@@ -521,13 +530,11 @@ footer {
       </script>
   
       <p>
-        Notice how “Traditional” RL can fixate on one route, while a “GFlowNet” 
-        maintains diverse paths. This diversity is especially valuable in 
-        scenarios like <strong>drug discovery</strong> or <strong>Tetris</strong>, 
-        where multiple solutions may be nearly as good as the top one. By 
-        distributing probability across <em>all</em> strong candidates, 
-        GFlowNets offer broader coverage and often more robust performance 
-        against changes or uncertainties.
+        The comparison below highlights how “Traditional RL” may fixate on 
+        one route, while a “GFlowNet” balances probability across many. 
+        If you imagine each <em>path</em> as a way to build a solution, a GFlowNet 
+        keeps multiple paths viable. This is especially helpful when you can not be sure 
+        which path is truly the best.
       </p>
   
       <div class="references">
@@ -551,7 +558,6 @@ footer {
           </li>
         </ul>
       </div>
-      
     </div>
   </section>
   
@@ -569,24 +575,25 @@ footer {
     <div class="section-content">
       <h2>2. Tetris GFlowNet Demo</h2>
       <p>
-        Welcome! We’ll start with the fun part: an interactive Tetris game guided by 
-        a <strong>GFlowNet</strong>. In a typical AI approach, we might 
-        see an agent hyper-focus on one “optimal” sequence of moves. But GFlowNets 
-        aim to <em>sample multiple good sequences</em>—each rewarded proportionally to 
-        how long they are predicted to make the agent survive the game. 
+        Here, you can watch a <strong>GFlowNet</strong> in action, guiding an 
+        interactive Tetris game. At each step, the system identifies multiple 
+        promising moves—each assigned a <em>“flow”</em> value indicating how strongly 
+        the GFlowNet favors it. Notably, it does not just stick to the 
+        single most probable move, but it occasionally samples less-likely options, 
+        ensuring exploration. Over time, it balances trying new strategies with 
+        maximizing the reward (in this case, staying alive in Tetris for as long as possible). 
+        This way the GFlowNet aims to match the real distribution of each move. 
       </p>
+  
       <p>
-        Check out the “Candidate Moves” on the right. Each has a “flow” value, 
-        representing how strongly the GFlowNet currently prefers it. The GFlowNet can 
-        also sample from less-likely moves, ensuring exploration. Over time, it 
-        balances variety (multiple strategies) with the pursuit of high reward 
-        (surviving the game as long as possible).
+        In the panel on the right, you will see the current top moves. 
+        The GFlowNet automatically picks the best one (highlighted in green), 
+        but you are free to override it by clicking on any other move 
+        to see how that might affect the game.
       </p>
-      <p>
-        The GFlowNet automatically selects the best move (highlighted in green), but you can override this by clicking on any other move.      </p>
     </div>
-
-    <!-- (Line 310) Actual Tetris Canvas & Moves -->
+  
+    <!-- Actual Tetris Canvas & Moves -->
     <section id="tetris-game">
       <div class="container">
         <div class="board">
@@ -601,6 +608,7 @@ footer {
         </div>
       </div>
     </section>
+  
     <div class="references">
       <h3>Further Reading – Tetris GFlowNet Demo</h3>
       <ul>
@@ -623,67 +631,74 @@ footer {
       </ul>
     </div>
   </section>
+  
 
 
   <section id="motivation">
     <div class="section-content">
       <h2>3. Understanding GFlowNets</h2>
+      
       <p>
-        GFlowNets are a novel class of generative models 
-        designed to <em>sample from an unnormalized distribution</em> defined by a 
-        reward function. In simpler words, imagine you have a function <code>R(x)</code> 
-        that tells you how “good” a configuration <code>x</code> is. You might only 
-        know <code>R(x)</code> up to a constant factor (like a black-box scoring 
-        method or partial information). GFlowNets aim to produce outcomes 
-        <code>x</code> <strong>in proportion to</strong> <code>R(x)</code>, 
-        encouraging coverage of <em>all good solutions</em>, not just the single best.
+        GFlowNets learn to generate different solutions by giving each one a chance 
+        based on how “good” it is. If a solution is better (or has a higher “reward”), 
+        the GFlowNet will pick it more often. This also leaves room for other strong 
+        solutions, so you do not get stuck with just a single “winner.”
       </p>
-      <p>
-        This is especially powerful in real-world tasks: from Tetris to drug discovery, 
-        you often want multiple strong solutions. Traditional RL might fixate on 
-        one “optimal path,” but GFlowNets discover a broad set of solutions, each 
-        sampled in proportion to how good it is.
-      </p>
-
   
-
-
-     <!-- For flow conservation (motivation) -->
- <div id="flowConservationContainer">
-  <svg id="flowConservationSVG"></svg>
-</div>
-
-
-<!-- Load & initialize your flow_conservation.js code -->
-<script src="/static/flow_conservation.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-initFlowConservationDemo();
-});
-</script>
-<div class="references">
-  <h3>Further Readings - Understanding GFlowNets</h3>
-  <ul>
-    <li>
-      <strong>[1]</strong>
-      Tiapkin, D. et al.
-      <a href="https://arxiv.org/pdf/2310.12934.pdf" target="_blank">
-        <em>Generative Flow Networks as Entropy-Regularized RL</em>
-      </a>
-      (arXiv 2023)
-    </li>
-    <li>
-      <strong>[2]</strong>
-      Zhang, D. et al.
-      <a href="https://arxiv.org/pdf/2209.02606.pdf" target="_blank">
-        <em>Unifying Generative Models with GFlowNets and Beyond</em>
-      </a>
-      (arXiv 2022)
-    </li>
-  </ul>
-</div>
-
+      <p>
+        A helpful way to picture this is to imagine water flowing through a network 
+        of pipes. Each node in the network is a partial step toward a final solution. 
+        Each edge is a possible move that sends some of the water forward. A reward 
+        acts like the size of the container at the end of each path: bigger rewards 
+        gather more water, so those solutions appear more frequently. Smaller rewards 
+        still collect some water too, which prevents them from being ignored.
+      </p>
+  
+      <p>
+        This design relies on <em>flow conservation</em>. It means any flow that enters 
+        a node must exit it along one of the available paths. Nothing is lost or created 
+        midstream. In practice, this simple rule ensures that high-reward solutions end 
+        up with more flow, yet other options receive some flow as well. The diagram below 
+        illustrates how different paths share in this flow of probability, making 
+        GFlowNets valuable for tasks that need multiple strong outcomes.
+      </p>
+      
+      <!-- Flow Conservation Demo -->
+      <div id="flowConservationContainer">
+        <svg id="flowConservationSVG"></svg>
+      </div>
+      <script src="/static/flow_conservation.js"></script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          initFlowConservationDemo();
+        });
+      </script>
+  
+      <div class="references">
+        <h3>Further Readings on GFlowNets</h3>
+        <ul>
+          <li>
+            <strong>[1]</strong>
+            Tiapkin, D. et al.
+            <a href="https://arxiv.org/pdf/2310.12934.pdf" target="_blank">
+              <em>Generative Flow Networks as Entropy-Regularized RL</em>
+            </a>
+            (arXiv 2023)
+          </li>
+          <li>
+            <strong>[2]</strong>
+            Zhang, D. et al.
+            <a href="https://arxiv.org/pdf/2209.02606.pdf" target="_blank">
+              <em>Unifying Generative Models with GFlowNets and Beyond</em>
+            </a>
+            (arXiv 2022)
+          </li>
+        </ul>
+      </div>
+    </div>
   </section>
+  
+  
   
 
   
@@ -693,21 +708,31 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
 ================================================================================= -->
 <section id="theory">
   <div class="section-content">
-    <h2>4. Core Concepts &amp; Flow Conservation</h2>
+    <h2>4. Core Concepts & Flow Conservation</h2>
+    
     <p>
-      Generative Flow Networks (GFlowNets) approach the generation of complex objects, such as molecules, by treating it as a step-by-step journey through a Directed Acyclic Graph (DAG). Each node in this DAG represents a <em>partial</em> solution, and each edge represents a decision or action that advances towards a "more complete" solution. GFlowNets ensure that the likelihood of reaching a final solution (terminal node) is proportional to its "reward" or quality by enforcing the fundamental principle of <strong>flow conservation</strong>: the flow entering any node must equal the flow leaving it.
+      In this section, we take a look at how GFlowNets can help build complex objects like molecules. 
+      The idea is to treat each molecule as a path in a Directed Acyclic Graph (DAG), where each node represents 
+      a partial structure and each edge represents an action that adds or changes something about that structure. 
+      You progress step by step until you reach a fully formed molecule at a terminal node.
     </p>
-
+    
     <p>
-      In practical scenarios such as drug discovery, these rewards might represent predictions of a molecule's effectiveness or its potential to bind to a target protein. Rather than focusing on a single best solution, GFlowNets encourage diversity by distributing probabilities across many good outcomes. This approach naturally balances exploration and exploitation, providing multiple promising solutions rather than just one.
+      The principle of <strong>flow conservation</strong> ensures that any flow entering a node must be 
+      distributed among its outgoing edges. A molecule with a higher “reward” (for instance, a better prediction 
+      for binding to a target protein) naturally receives more flow. This means GFlowNets are not locked onto 
+      one single candidate; they encourage multiple promising solutions. That diversity can be crucial when 
+      searching large spaces, such as all possible molecules you might want to synthesize and test.
     </p>
-
+    
     <!-- BIG DAG in #moleculeFlowSVG (molecule_flow.js) -->
     <div id="moleculeFlowContainer">
       <svg id="moleculeFlowSVG" width="1000" height="600"></svg>
-      <div id="flowTooltipBig"
-           style="position:absolute; background:#333; color:#fff; padding:6px; 
-                  border-radius:4px; pointer-events:none; opacity:0;">
+      <div
+        id="flowTooltipBig"
+        style="position:absolute; background:#333; color:#fff; padding:6px;
+               border-radius:4px; pointer-events:none; opacity:0;"
+      >
       </div>
     </div>
 
@@ -735,45 +760,64 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
     <details>
       <summary>Interpreting the DAG</summary>
       <p>
-        Each level in the DAG visualization represents progressively more complete partial solutions. Nodes represent partial states, and edges represent actions taken. The graph never loops back to earlier states, ensuring a clear forward progression toward fully formed solutions at the bottom.
-      </p>
-      <p>
-        The thickness of edges or visual indicators of "flow" represent how likely a path is chosen. Paths that end in better final solutions naturally carry more flow. Multiple paths can converge into the same state, highlighting that the same final object can often be built through various action sequences. The key insight is that the total inflow at any node matches exactly its total outflow—this is the principle of flow conservation in action.
+        Each row or level in this visualization shows more advanced forms of the 
+        partial molecule. Nodes represent the current state of the molecule, 
+        and edges represent choices you can make at that step (such as adding a 
+        chemical group). Multiple paths can merge into the same node if there are 
+        different ways to reach the same structure. The terminal state is the reward on 
+        how good the molecules properties are based on the reward function. In this DAG the three terminal states on top are the candidate solutions, 
+        whereas the bottom three terminal states are solutions that the GFlowNet assigns less reward. 
       </p>
     </details>
 
     <details>
       <summary>Why This Matters in Drug Discovery</summary>
       <p>
-        Drug discovery is expensive, time-consuming, and uncertain. By generating multiple strong candidates rather than just one, GFlowNets offer a robust strategy for exploring large solution spaces, like potential drug molecules. If one candidate fails, other promising candidates still remain, increasing the overall chance of discovering effective drugs.
-      </p>
+        Drug discovery involves exploring many possible molecular structures 
+        in hopes of finding effective treatments. Because GFlowNets distribute 
+        “flow” across a set of strong candidates, they can systematically 
+        uncover molecules with good properties without missing other viable options. 
+        If a top molecule fails in real testing, the method still has other strong 
+        candidates to propose.      </p>
       <p>
-        GFlowNets also handle uncertainty in scoring systems gracefully. Even solutions that score slightly lower won't be entirely discarded, ensuring valuable alternatives aren't overlooked.
+        This ability to handle uncertainty in scoring (for example, uncertain predictions 
+        of how well a molecule binds) makes GFlowNets a powerful tool. Instead of discarding 
+        lower-scoring molecules outright, some flow will still reach them, keeping 
+        potential alternatives in play. Moreover, scientists also obtain samples with lower rewards, which can further enhance their understanding of the molecule generation process using GFlowNets. 
+
       </p>
     </details>
 
     <details>
       <summary>Technical Insight: Flow = Reward at Terminal Nodes</summary>
       <p>
-        GFlowNets directly link the concept of "flow" with the quality of solutions by ensuring the total flow entering a terminal node (final solution) exactly equals its reward. This ensures that solutions appear with probabilities directly proportional to their quality scores.
-      </p>
-      <p>
-        Training a GFlowNet involves adjusting how flow moves through the DAG, so that higher-reward solutions naturally receive proportionally higher flow, fulfilling the key principle that flow equals reward at each terminal state.
+        When the DAG reaches a terminal node that represents a complete molecule, 
+        the amount of flow arriving there matches the reward for that molecule. 
+        This ensures that the fraction of flow allocated to each final structure 
+        aligns with how promising that molecule is, based on the reward function. 
+        Training a GFlowNet involves adjusting these flows so that the final 
+        distribution over molecules reflects their rewards.
       </p>
     </details>
 
     <details>
       <summary>BONUS: Pretraining GFlowNets for Fast Inference</summary>
       <p>
-        One major advantage of GFlowNets is their ability to be pretrained. After an initial investment in training, a GFlowNet can quickly generate new high-quality solutions with minimal computation, greatly speeding up tasks such as drug molecule generation.
+        One of the key benefits of GFlowNets is that they can be pretrained. 
+        You spend the computation time upfront, and once the network has learned, 
+        it can produce diverse, high-quality candidates almost instantly. This 
+        speeds up tasks like generating large batches of promising molecules 
+        during the exploration phase of drug development.
       </p>
       <p>
-        Compared to methods that perform extensive computations per solution (like traditional optimization methods), GFlowNets generate diverse solutions in a single, efficient forward pass. Pretraining further enables rapid adaptation to similar new problems, significantly accelerating exploratory workflows.
+        Compared to traditional methods that require extensive searching for each new design, 
+        a pretrained GFlowNet quickly provides a broad set of potentially strong solutions 
+        without repeated heavy computations.
       </p>
     </details>
 
     <div class="references">
-      <h3>Further Reading – Core Concepts &amp; Flow Conservation</h3>
+      <h3>Further Reading – Core Concepts & Flow Conservation</h3>
       <ul>
         <li>
           <strong>[1]</strong>
@@ -912,6 +956,7 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
 
 "use strict";
 
+
 // ====================== CONSTANTS & GLOBALS ======================
 const CELL_SIZE = 30;
 const COLS = 10;
@@ -921,7 +966,8 @@ const MOVE_PAUSE_DURATION = 2000;
 
 // Game/Agent
 let game = null;
-let agent = null;
+let agent = null;    // We'll keep this for the old TrajectoryBalanceAgent
+let nnModel = null;  // This is our new big MLP model
 let trajectory = [];
 
 // UI Elements
@@ -943,7 +989,7 @@ let lastPieceId = null;
 let particleSpawnAccumulator = 0;
 let lastTime = performance.now();
 
-// Tetromino definitions
+// ====================== TETROMINO DEFINITIONS ======================
 const TETROMINOES = {
   I: [
     [0,0,0,0],
@@ -981,6 +1027,9 @@ const TETROMINOES = {
     [0,0,0]
   ]
 };
+const PIECES = Object.keys(TETROMINOES);
+const PIECE_IDS = {};
+PIECES.forEach((p,i)=> { PIECE_IDS[p] = i; });
 
 // ====================== HELPER FUNCTIONS ======================
 function deepCopy(matrix) {
@@ -1039,6 +1088,7 @@ class TetrisGame {
       x: Math.floor((this.cols - shape[0].length)/2),
       y: 0
     };
+    // check collision
     if(this.collides(piece)){
       this.game_over = true;
     }
@@ -1229,7 +1279,7 @@ class TetrisGame {
   }
 }
 
-// ====================== TRAJECTORY BALANCE AGENT ======================
+// ====================== TRAJECTORY BALANCE AGENT (old) ======================
 class TrajectoryBalanceAgent {
   constructor(lr=0.01){
     this.log_flows = {};
@@ -1291,13 +1341,181 @@ class TrajectoryBalanceAgent {
   }
   loadFromJSON(obj){
     try {
-      this.log_flows = obj.log_flows || {};
+      this.log_flows = obj.log_flows || obj.weights || {};
       this.logZ = obj.logZ || 0.0;
-      console.log("[agent] Loaded from JSON. (#states=", Object.keys(this.log_flows).length, ", logZ=", this.logZ, ")");
+      console.log("[agent] Loaded from JSON. (#states=", 
+          Object.keys(this.log_flows).length, ", logZ=", this.logZ, ")");
     } catch(e){
       console.error("[agent] Error loading from JSON:", e);
     }
   }
+}
+
+// ====================== NEURAL NET REPLACEMENT ======================
+// We'll load "pretrained_flows_nn.json" => with a big MLP (3 hidden layers).
+// We'll define a class that does forward pass: input => 214 dims => output => logFlow(s,a).
+// This matches the Python code that has state(212) + action(2) => 214 total.
+class NeuralFlowNet {
+  constructor(){
+    this.logZ= 0.0;
+    this.loaded= false;
+    // We'll store the named params:
+    // net.0.weight => shape [512, 214]
+    // net.0.bias   => shape [512]
+    // net.2.weight => shape [512,512]
+    // net.2.bias   => shape [512]
+    // net.4.weight => shape [512,512]
+    // net.4.bias   => shape [512]
+    // net.6.weight => shape [1,512]
+    // net.6.bias   => shape [1]
+    this.W0=null; this.b0=null;
+    this.W2=null; this.b2=null;
+    this.W4=null; this.b4=null;
+    this.W6=null; this.b6=null;
+  }
+  loadJson(obj){
+    this.logZ= obj.logZ || 0.0;
+    let w= obj.weights;
+    this.W0= w["net.0.weight"];
+    this.b0= w["net.0.bias"];
+    this.W2= w["net.2.weight"];
+    this.b2= w["net.2.bias"];
+    this.W4= w["net.4.weight"];
+    this.b4= w["net.4.bias"];
+    this.W6= w["net.6.weight"];
+    this.b6= w["net.6.bias"];
+    this.loaded= true;
+    console.log("[NeuralFlowNet] loaded. logZ=", this.logZ);
+  }
+  // matrix vector multiply
+  static matvec(W, x){
+    let rows= W.length;
+    let out= new Array(rows).fill(0);
+    for (let r=0; r<rows; r++){
+      let sum=0;
+      let row= W[r];
+      for (let c=0; c<row.length; c++){
+        sum+= row[c]* x[c];
+      }
+      out[r]= sum;
+    }
+    return out;
+  }
+  forward(x214){
+    // layer0
+    let z0= NeuralFlowNet.matvec(this.W0, x214);
+    for (let i=0; i<z0.length; i++){
+      z0[i]+= this.b0[i];
+      if (z0[i]<0) z0[i]=0; // ReLU
+    }
+    // layer2
+    let z2= NeuralFlowNet.matvec(this.W2, z0);
+    for (let i=0; i<z2.length; i++){
+      z2[i]+= this.b2[i];
+      if (z2[i]<0) z2[i]=0;
+    }
+    // layer4
+    let z4= NeuralFlowNet.matvec(this.W4, z2);
+    for (let i=0; i<z4.length; i++){
+      z4[i]+= this.b4[i];
+      if (z4[i]<0) z4[i]=0;
+    }
+    // layer6 => output => shape [1]
+    let z6= NeuralFlowNet.matvec(this.W6, z4);
+    let out= z6[0] + this.b6[0];
+    return out; // logFlow
+  }
+}
+
+// We'll define the encodeStateAction => 214 dims
+// board => 20*10=200
+// pieceOneHot =>7
+// piece x,y =>2
+// some heuristics => let's do holes, maxH, bump => 3 => total=212 for state
+// plus action =>2 => total=214
+function flattenBoard(board){
+  // 20 x10 =>200
+  let arr=[];
+  for (let r=0; r<board.length; r++){
+    arr.push(...board[r]);
+  }
+  return arr;
+}
+function countHoles(board){
+  let holes=0;
+  let rows= board.length;
+  let cols= board[0].length;
+  for (let c=0; c<cols; c++){
+    let blockFound=false;
+    for (let r=0; r<rows; r++){
+      if (board[r][c]===1) {
+        blockFound=true;
+      } else if (blockFound && board[r][c]===0){
+        holes++;
+      }
+    }
+  }
+  return holes;
+}
+function boardMaxHeight(board){
+  let rows= board.length;
+  for (let r=0; r<rows; r++){
+    if (board[r].some(cell=>cell===1)){
+      return rows-r;
+    }
+  }
+  return 0;
+}
+function countBumpiness(board){
+  let rows= board.length;
+  let cols= board[0].length;
+  let heights=[];
+  for (let c=0;c<cols;c++){
+    let h=0;
+    for (let r=0;r<rows;r++){
+      if (board[r][c]===1){
+        h= rows-r;
+        break;
+      }
+    }
+    heights.push(h);
+  }
+  let bump=0;
+  for (let c=0;c<cols-1;c++){
+    bump+= Math.abs(heights[c]- heights[c+1]);
+  }
+  return bump;
+}
+function encodeState(board, piece){
+  // flatten =>200
+  let flat= flattenBoard(board);
+  // pieceOneHot =>7
+  let oh= new Array(7).fill(0);
+  let idx= PIECE_IDS[piece.type] || 0;
+  oh[idx]=1;
+  // piece coords =>2 => normalized
+  let px= piece.x/(COLS-1);
+  let py= piece.y/(ROWS-1);
+  // heuristics => holes, maxH, bump =>3
+  let holes= countHoles(board);
+  let maxH= boardMaxHeight(board);
+  let bump= countBumpiness(board);
+  let features= flat.concat( oh, [px,py], [holes,maxH,bump] );
+  return features; // length=212
+}
+function encodeAction(aKey){
+  // "r2_x3" => parse => rVal =>2/3, xVal=>3/(COLS-1)
+  let [rPart,xPart]= aKey.split("_"); // e.g. "r2","x3"
+  let rotStr= rPart.slice(1); // "2"
+  let xStr= xPart.slice(1);   // "3"
+  let rVal= parseInt(rotStr)/3.0;
+  let xVal= parseInt(xStr)/(COLS-1);
+  return [rVal,xVal]; // length=2
+}
+function encodeStateAction(board, piece, actionKey){
+  let st= encodeState(board, piece); // 212
+  let ac= encodeAction(actionKey);   // 2
+  return st.concat(ac); // 214
 }
 
 // ====================== VISUAL EFFECTS ======================
@@ -1331,9 +1549,9 @@ class Arrow {
   }
   draw(ctx){
     const rgb=hexToRgb(this.color);
-    let lineWidth = Math.min(10, 2+this.flow/2000);
+   // let lineWidth = Math.min(10, 2+this.flow/2000);
     ctx.strokeStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.8*this.life})`;
-    ctx.lineWidth=lineWidth;
+    // ctx.lineWidth=lineWidth;
     ctx.beginPath();
     ctx.moveTo(this.from.x,this.from.y);
     ctx.lineTo(this.to.x,this.to.y);
@@ -1365,21 +1583,42 @@ function getCandidateMoves(){
       }
     };
   }
-  const state_key = game.get_state_key();
   const cands = game.get_terminal_moves();
   const result=[];
-  let sum_exp=0;
-  for(let c of cands){
-    agent._ensure_action_exists(state_key,c.action_key);
-    const val=Math.exp(agent.log_flows[state_key][c.action_key]);
-    sum_exp += val;
-  }
-  for(let c of cands){
-    const flow_val=Math.exp(agent.log_flows[state_key][c.action_key]);
-    const prob = (sum_exp>0)? flow_val/sum_exp : (1.0/cands.length);
-    c.flow=flow_val; 
-    c.probability=prob;
-    result.push(c);
+  // If neural net is loaded, we'll compute logFlow => flow => prob
+  // Otherwise, we fallback to the old "agent" table or random
+  if(nnModel && nnModel.loaded){
+    let sumFlow=0;
+    for(let c of cands){
+      let sa= encodeStateAction(game.board, game.current_piece, c.action_key);
+      let logF= nnModel.forward(sa);
+      // clamp to avoid overflow
+      if(logF>20) logF=20;
+      if(logF<-20) logF=-20;
+      let flow= Math.exp(logF);
+      c.flow=flow;
+      sumFlow+= flow;
+    }
+    for(let c of cands){
+      c.probability= (sumFlow>0) ? (c.flow/sumFlow) : (1.0/cands.length);
+      result.push(c);
+    }
+  } else {
+    // fallback => like the old approach with agent
+    const state_key = game.get_state_key();
+    let sum_exp=0;
+    for(let c of cands){
+      agent._ensure_action_exists(state_key,c.action_key);
+      const val=Math.exp(agent.log_flows[state_key][c.action_key]);
+      sum_exp += val;
+    }
+    for(let c of cands){
+      const flow_val=Math.exp(agent.log_flows[state_key][c.action_key]);
+      const prob = (sum_exp>0)? flow_val/sum_exp : (1.0/cands.length);
+      c.flow=flow_val; 
+      c.probability=prob;
+      result.push(c);
+    }
   }
   return {
     current_piece_center: game.get_piece_center(),
@@ -1392,6 +1631,7 @@ function getCandidateMoves(){
     }
   };
 }
+
 function selectMove(actionKey=null){
   if(game.is_over()){
     return { error:"Game Over" };
@@ -1400,22 +1640,30 @@ function selectMove(actionKey=null){
   if(!cands || cands.length===0){
     return { error:"No moves" };
   }
-  const state_key = game.get_state_key();
   let selected_action=null;
   if(actionKey){
     selected_action = cands.find(x=>x.action_key===actionKey) || null;
   }
   if(!selected_action){
-    const [cand,_p] = agent.sample_action(state_key, cands);
-    selected_action=cand;
+    // auto pick the top candidate if using NN => best flow
+    if(nnModel && nnModel.loaded){
+      // pick candidate with the highest c.flow
+      cands.sort((a,b)=> (b.flow||0) - (a.flow||0));
+      selected_action= cands[0];
+    } else {
+      // fallback => sample from old agent
+      const state_key = game.get_state_key();
+      const [cand,_p] = agent.sample_action(state_key, cands);
+      selected_action=cand;
+    }
   }
-  trajectory.push([state_key,selected_action.action_key]);
+  trajectory.push([game.get_state_key(), selected_action.action_key]);
   game.target_piece = deepCopy(selected_action.piece);
   const arrow_info={
     from: game.get_piece_center(game.current_piece),
     to: selected_action.piece_center,
-    flow: 0.0,
-    probability: 0.0
+    flow: selected_action.flow||0,
+    probability: selected_action.probability||0
   };
   return {
     action_key: selected_action.action_key,
@@ -1443,19 +1691,37 @@ function tickGameLogic(){
   }
   let terminal_moves=[];
   if(new_pid!==old_pid && !game.is_over()){
-    const state_key=game.get_state_key();
-    const cands=game.get_terminal_moves();
-    let sum_exp=0;
-    for(let c of cands){
-      agent._ensure_action_exists(state_key,c.action_key);
-      sum_exp+= Math.exp(agent.log_flows[state_key][c.action_key]);
-    }
-    for(let c of cands){
-      const fv=Math.exp(agent.log_flows[state_key][c.action_key]);
-      const prob = sum_exp>0 ? fv/sum_exp : (1.0/cands.length);
-      c.flow=fv; 
-      c.probability=prob;
-      terminal_moves.push(c);
+    const cands= game.get_terminal_moves();
+    if(nnModel && nnModel.loaded){
+      let sumFlow=0;
+      for(let c of cands){
+        let sa= encodeStateAction(game.board, game.current_piece, c.action_key);
+        let logF= nnModel.forward(sa);
+        if(logF>20) logF=20;
+        if(logF<-20) logF=-20;
+        let fv= Math.exp(logF);
+        c.flow= fv;
+        sumFlow+= fv;
+      }
+      for(let c of cands){
+        c.probability= sumFlow>0 ? (c.flow/sumFlow) : (1.0/cands.length);
+        terminal_moves.push(c);
+      }
+    } else {
+      // fallback => old agent
+      const state_key= game.get_state_key();
+      let sum_exp=0;
+      for(let c of cands){
+        agent._ensure_action_exists(state_key,c.action_key);
+        sum_exp+= Math.exp(agent.log_flows[state_key][c.action_key]);
+      }
+      for(let c of cands){
+        const fv=Math.exp(agent.log_flows[state_key][c.action_key]);
+        const prob = sum_exp>0 ? fv/sum_exp : (1.0/cands.length);
+        c.flow=fv; 
+        c.probability=prob;
+        terminal_moves.push(c);
+      }
     }
   }
   return {
@@ -1607,21 +1873,42 @@ function animate(){
 
 // ====================== FRONT-END "ENDPOINTS" ======================
 function fetchCandidateMoves(){
-  if(simulationPaused) return;
-  const data=getCandidateMoves();
-  currentGameState=data.game_state || {};
-  currentPieceCenter=data.current_piece_center || {x:0,y:0};
-  candidateMoves=data.terminal_moves || [];
-  candidateMoves.sort((a,b)=>b.flow - a.flow);
-  topCandidates=candidateMoves.slice(0,3);
+  if (simulationPaused) return;
+  const data = getCandidateMoves();
+  currentGameState = data.game_state || {};
+  currentPieceCenter = data.current_piece_center || {x:0,y:0};
+  candidateMoves = data.terminal_moves || [];
+  // if empty => done
+  if (!candidateMoves.length){
+    topCandidates=[];
+    updateCandidateListUI();
+    return;
+  }
+
+  // 1) Sort or find max
+  candidateMoves.sort((a,b)=>(b.flow||0) - (a.flow||0));
+  let maxFlowVal = candidateMoves[0].flow || 1;
+  // 2) Normalize each flow by dividing by that max
+  candidateMoves.forEach(c=>{
+    c.flowNormalized = c.flow / maxFlowVal; 
+  });
+  // 3) Possibly multiply by some factor, e.g. 100, to display as small integers
+  candidateMoves.forEach(c=>{
+    c.flowDisplay = (c.flowNormalized * 100).toFixed(2);
+  });
+
+  // We'll keep flow for probability, but for display use c.flowDisplay
+  topCandidates = candidateMoves.slice(0,3);
   assignCandidateColors(topCandidates);
   updateCandidateListUI();
-  // auto-select the top candidate if it exists
+
+  // auto-select top
   const firstCandidateEl = candidateListEl.querySelector(".candidate");
   if(firstCandidateEl){
     firstCandidateEl.click();
   }
 }
+
 function doSelectCandidate(actionKey){
   simulationPaused=true;
   const data = selectMove(actionKey);
@@ -1668,20 +1955,22 @@ function doResetGame(){
   fetchCandidateMoves();
 }
 function updateCandidateListUI(){
-  candidateListEl.innerHTML="";
+  candidateListEl.innerHTML = "";
   topCandidates.forEach((c,i)=>{
-    let div=document.createElement("div");
-    div.className="candidate";
-    div.style.borderLeft=`10px solid ${c.color}`;
-    div.innerHTML=`
+    let div = document.createElement("div");
+    div.className = "candidate";
+    div.style.borderLeft = `10px solid ${c.color}`;
+    // Instead of c.flow, we show c.flowDisplay
+    div.innerHTML = `
       <h3>${c.action_key}</h3>
-      <p>Flow: ${c.flow.toFixed(2)}</p>
-      <p>Prob: ${(c.probability*100).toFixed(1)}%</p>
+      <p>Flow: ${c.flowDisplay || 0}</p>
+      <p>Prob: ${( (c.probability||0)*100).toFixed(1)}%</p>
     `;
-    div.onclick=()=>doSelectCandidate(c.action_key);
+    div.onclick = ()=> doSelectCandidate(c.action_key);
     candidateListEl.appendChild(div);
   });
 }
+
 
 // ====================== INIT FUNCTION ======================
 function init(){
@@ -1693,11 +1982,12 @@ function init(){
 
   // Create Tetris + Agent
   game=new TetrisGame();
-  agent=new TrajectoryBalanceAgent(0.02);
+  agent=new TrajectoryBalanceAgent(0.02); // old approach, not used if NN loaded
+  nnModel= new NeuralFlowNet();          // new approach
 
-  // Attempt to load from pretrained_flows_tb.json
-  console.log("[init] Attempting to fetch pretrained_flows_tb.json...");
-  fetch("pretrained_flows_tb.json")
+  // Attempt to load from pretrained_flows_nn.json
+  console.log("[init] Attempting to fetch pretrained_flows_nn.json...");
+  fetch("pretrained_flows_nn.json")
     .then(resp=>{
       if(!resp.ok){
         throw new Error(`Could not fetch JSON: ${resp.status} ${resp.statusText}`);
@@ -1705,11 +1995,11 @@ function init(){
       return resp.json();
     })
     .then(jsonData=>{
-      console.log("[init] Successfully loaded pretrained_flows_tb.json!");
-      agent.loadFromJSON(jsonData);
+      console.log("[init] Successfully loaded pretrained_flows_nn.json!");
+      nnModel.loadJson(jsonData);
     })
     .catch(err=>{
-      console.warn("[init] Could NOT load pretrained_flows_tb.json, continuing with random flows:", err);
+      console.warn("[init] Could NOT load pretrained_flows_nn.json, continuing with fallback agent:", err);
     })
     .finally(()=>{
       // Start game loop
@@ -1727,6 +2017,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 <!-- 
    (Line 1670) Final JavaScript for Nav Menu and Sticky Arrow
+   (If you don't need this part, remove it or keep it)
 -->
 <script>
 function toggleNavMenu() {
@@ -1754,8 +2045,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }, { threshold: 0.3 });
   sections.forEach(section => observer.observe(section));
-
-
 });
 </script>
 
@@ -1804,56 +2093,13 @@ particlesJS("particles-js", {
 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    renderMathInElement(document.body, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '$', right: '$', display: false},
-      ]
-    });
-  });
-  </script>
-
-<!-- Navigation toggle and IntersectionObserver -->
-<script>
-  function toggleNavMenu() {
-    const nav = document.getElementById('mainNav');
-    nav.classList.toggle('show');
-  }
-  function scrollDown() {
-    window.scrollBy({
-      top: window.innerHeight,
-      left: 0,
-      behavior: 'smooth'
-    });
-  }
-  
-  // Close nav on link click
-  document.addEventListener("DOMContentLoaded", () => {
-
-  
-    const sections = document.querySelectorAll("main section");
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("active");
-        } else {
-          entry.target.classList.remove("active");
-        }
+    if(typeof renderMathInElement==="function"){
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+        ]
       });
-    }, { threshold: 0.3 });
-    sections.forEach(section => observer.observe(section));
+    }
   });
-  </script>
-
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<svg id="moleculeFlowSVG" width="1000" height="600"></svg>
-<div id="flowTooltipBig" style="position:absolute; background:#333; color:#fff;
-                                padding:6px; border-radius:4px; pointer-events:none; opacity:0;">
-</div>
-
-
-  
-
-
-</body>
-</html>
+</script>
