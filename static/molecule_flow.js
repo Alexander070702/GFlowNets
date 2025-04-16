@@ -448,7 +448,7 @@ function spawnMoleculeParticles(dtMs) {
   const dtSec = dtMs / 100; 
   edgeObjs.forEach(e => {
     // higher exponent => more particles for higher flow
-    const spawnRate = Math.pow(e.flow, 2) * spawnMultiplier;
+    const spawnRate = e.flow * spawnMultiplier;
     const expectedCount = spawnRate * dtSec;
     const countToSpawn = Math.floor(expectedCount + Math.random());
 

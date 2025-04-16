@@ -1524,11 +1524,13 @@ class Particle {
     this.x=x; this.y=y; this.vx=vx; this.vy=vy;
     this.radius=radius; this.life=life; this.color=color;
   }
-  update(dt){
-    this.x += this.vx*dt;
-    this.y += this.vy*dt;
-    this.life -= dt*0.4;
+  update(dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    // Instead of 0.4, use something like 0.8 => ~1.25s lifetime
+    this.life -= dt * 0.4;
   }
+  
   draw(ctx){
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
@@ -1805,24 +1807,29 @@ function drawCandidateShadow(piece,color){
   }
   ctx.restore();
 }
-function spawnParticles(from,to,factor=1,color){
-  let count=Math.max(1,Math.round(7*factor));
-  let dx=to.x-from.x;
-  let dy=to.y-from.y;
-  let dist=Math.hypot(dx,dy)||1;
-  let ux=dx/dist;
-  let uy=dy/dist;
-  let baseColor=color?hexToRgb(color):{r:255,g:255,b:255};
-  for(let i=0; i<count; i++){
-    const t=Math.random();
-    const x=from.x+dx*t;
-    const y=from.y+dy*t;
-    let speed=30+Math.random()*20;
-    let vx=ux*speed+(Math.random()-0.5)*10;
-    let vy=uy*speed+(Math.random()-0.5)*10;
-    particles.push(new Particle(x,y,vx,vy,4,1.0,baseColor));
+function spawnParticles(from, to, factor=1, color) {
+  // Instead of 7, reduce base count to 3
+  let count = Math.max(1, Math.round(4 * factor));
+
+  let dx = to.x - from.x;
+  let dy = to.y - from.y;
+  let dist = Math.hypot(dx, dy) || 1;
+  let ux = dx / dist;
+  let uy = dy / dist;
+  let baseColor = color ? hexToRgb(color) : {r:255, g:255, b:255};
+
+  for (let i = 0; i < count; i++) {
+    const t = Math.random();
+    const x = from.x + dx * t;
+    const y = from.y + dy * t;
+    // Lower speed from (30 + random * 20) to e.g. (12 + random * 8)
+    let speed = 12 + Math.random() * 8;
+    let vx = ux * speed + (Math.random() - 0.5) * 5;  // smaller random offset
+    let vy = uy * speed + (Math.random() - 0.5) * 5;
+    particles.push(new Particle(x, y, vx, vy, 4, 1.0, baseColor));
   }
 }
+
 function spawnArrow(from,to,flow,color){
   appliedArrows.push(new Arrow(from,to,flow,color));
 }
@@ -1845,21 +1852,23 @@ function animate(){
   let dt=(now - lastTime)/1000;
   lastTime=now;
 
-  particleSpawnAccumulator+=dt;
-  if(particleSpawnAccumulator>0.25){
-    if(topCandidates.length>0){
-      let maxFlow=topCandidates[0].flow||1;
-      topCandidates.forEach((cand,i)=>{
-        let ratio=cand.flow/maxFlow;
-        if(i===0) ratio*=3;
-        else if(i===1) ratio*=1.5;
-        else if(i===2) ratio*=0.5;
-        spawnParticles(currentPieceCenter,cand.piece_center,ratio,cand.color);
+  particleSpawnAccumulator += dt;
+  // Instead of 0.25, wait a full second:
+  if (particleSpawnAccumulator > 1.0) {
+    if (topCandidates.length > 0) {
+      let maxFlow = topCandidates[0].flow || 1;
+      topCandidates.forEach((cand, i) => {
+        // Reduce these multipliers
+        let ratio = cand.flow / maxFlow;
+        if (i === 0) ratio *= 2;   // was 3
+        else if (i === 1) ratio *= 1; // was 1.5
+        else if (i === 2) ratio *= 0.3; // was 0.5
+        spawnParticles(currentPieceCenter, cand.piece_center, ratio, cand.color);
       });
     }
-    particleSpawnAccumulator=0;
+    particleSpawnAccumulator = 0;
   }
-
+  
   for(let i=particles.length-1; i>=0; i--){
     particles[i].update(dt);
     if(particles[i].life<=0){
