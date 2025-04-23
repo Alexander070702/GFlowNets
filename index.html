@@ -954,109 +954,193 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
 
 <script>
 
-"use strict";
+  "use strict";
+  
+  // ====================== CONSTANTS & GLOBALS ======================
+  const CELL_SIZE = 30;
+  const COLS = 10;
+  const ROWS = 20;
+  const TICK_INTERVAL = 400;
+  const MOVE_PAUSE_DURATION = 1000;
+  
+  // Game/Agent
+  let game = null;
+  let agent = null;    // old TrajectoryBalanceAgent
+  let nnModel = null;  // will hold NeuralFlowNet if you ever train one
+  let trajectory = [];
+  
+  // UI handles
+  let canvas, ctx, candidateListEl, resetBtn;
+  
+  // State
+  let currentGameState = null;
+  let currentPieceCenter = { x:0, y:0 };
+  let candidateMoves = [];
+  let topCandidates = [];
+  let appliedArrows = [];
+  let particles = [];
+  let simulationPaused = false;
+  let lastPieceId = null;
+  let particleSpawnAccumulator = 0;
+  let lastTime = performance.now();
+    
+    // ====================== TETROMINO DEFINITIONS ======================
+    const TETROMINOES = {
+      I: [
+        [0,0,0,0],
+        [1,1,1,1],
+        [0,0,0,0],
+        [0,0,0,0]
+      ],
+      O: [
+        [1,1],
+        [1,1]
+      ],
+      T: [
+        [0,1,0],
+        [1,1,1],
+        [0,0,0]
+      ],
+      S: [
+        [0,1,1],
+        [1,1,0],
+        [0,0,0]
+      ],
+      Z: [
+        [1,1,0],
+        [0,1,1],
+        [0,0,0]
+      ],
+      J: [
+        [1,0,0],
+        [1,1,1],
+        [0,0,0]
+      ],
+      L: [
+        [0,0,1],
+        [1,1,1],
+        [0,0,0]
+      ]
+    };
+    const PIECES = Object.keys(TETROMINOES);
+    const PIECE_IDS = {};
+    PIECES.forEach((p,i)=> { PIECE_IDS[p] = i; });
+    
+    // ====================== HELPER FUNCTIONS ======================
+    function deepCopy(matrix) {
+      return JSON.parse(JSON.stringify(matrix));
+    }
+    function rotateMatrix(matrix) {
+      const rows = matrix.length;
+      const cols = matrix[0].length;
+      const rotated = [];
+      for (let c=0; c<cols; c++){
+        rotated[c] = [];
+        for (let r=rows-1; r>=0; r--){
+          rotated[c].push(matrix[r][c]);
+        }
+      }
+      return rotated;
+    }
+    function hexToRgb(hex) {
+      hex = hex.replace(/^#/, "");
+      const bigint = parseInt(hex, 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+   
+      function beamSearch(moves, depth, beamWidth) {
+        return moves.reduce((best, m) =>
+          m.combinedScore > best.combinedScore ? m : best
+        , moves[0]);
+      }
 
-
-// ====================== CONSTANTS & GLOBALS ======================
-const CELL_SIZE = 30;
-const COLS = 10;
-const ROWS = 20;
-const TICK_INTERVAL = 700;
-const MOVE_PAUSE_DURATION = 2000;
-
-// Game/Agent
-let game = null;
-let agent = null;    // We'll keep this for the old TrajectoryBalanceAgent
-let nnModel = null;  // This is our new big MLP model
-let trajectory = [];
-
-// UI Elements
-let canvas = null;
-let ctx = null;
-let candidateListEl = null;
-let resetBtn = null;
-
-// State
-let currentGameState = null;
-let currentPieceCenter = { x:0, y:0 };
-let candidateMoves = [];
-let topCandidates = [];
-let appliedArrows = [];
-let particles = [];
-
-let simulationPaused = false;
-let lastPieceId = null;
-let particleSpawnAccumulator = 0;
-let lastTime = performance.now();
-
-// ====================== TETROMINO DEFINITIONS ======================
-const TETROMINOES = {
-  I: [
-    [0,0,0,0],
-    [1,1,1,1],
-    [0,0,0,0],
-    [0,0,0,0]
-  ],
-  O: [
-    [1,1],
-    [1,1]
-  ],
-  T: [
-    [0,1,0],
-    [1,1,1],
-    [0,0,0]
-  ],
-  S: [
-    [0,1,1],
-    [1,1,0],
-    [0,0,0]
-  ],
-  Z: [
-    [1,1,0],
-    [0,1,1],
-    [0,0,0]
-  ],
-  J: [
-    [1,0,0],
-    [1,1,1],
-    [0,0,0]
-  ],
-  L: [
-    [0,0,1],
-    [1,1,1],
-    [0,0,0]
-  ]
-};
-const PIECES = Object.keys(TETROMINOES);
-const PIECE_IDS = {};
-PIECES.forEach((p,i)=> { PIECE_IDS[p] = i; });
-
-// ====================== HELPER FUNCTIONS ======================
-function deepCopy(matrix) {
-  return JSON.parse(JSON.stringify(matrix));
-}
-function rotateMatrix(matrix) {
-  const rows = matrix.length;
-  const cols = matrix[0].length;
-  const rotated = [];
-  for (let c=0; c<cols; c++){
-    rotated[c] = [];
-    for (let r=rows-1; r>=0; r--){
-      rotated[c].push(matrix[r][c]);
+  /**
+ * Simulate dropping `piece` on arbitrary `board`, clear lines,
+ * and return the resulting board + linesCleared.
+ */
+function simulatePlacementOnBoard(board, piece) {
+  const b = deepCopy(board);
+  const shape = piece.shape;
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (shape[r][c]) {
+        b[piece.y + r][piece.x + c] = 1;
+      }
     }
   }
-  return rotated;
-}
-function hexToRgb(hex) {
-  hex = hex.replace(/^#/, "");
-  const bigint = parseInt(hex, 16);
-  return {
-    r: (bigint >> 16) & 255,
-    g: (bigint >> 8) & 255,
-    b: bigint & 255
-  };
+  const newBoard = b.filter(row => !row.every(cell => cell === 1));
+  const linesCleared = b.length - newBoard.length;
+  for (let i = 0; i < linesCleared; i++) {
+    newBoard.unshift(new Array(COLS).fill(0));
+  }
+  return { newBoard, linesCleared };
 }
 
+/**
+ * Depth‑2 “beamEvaluate”: for a given first‐move `m`, score =
+ * heuristic(m on current board)
+ *   + max₂ [ heuristic(m₂ on board after m) ]
+ * We don’t know the next piece, so we sample *one* via spawn_piece.
+ */
+ function beamEvaluate(m) {
+  // 1) Apply first move
+  const { newBoard: b1, linesCleared: lc1 } =
+    simulatePlacementOnBoard(game.board, m.piece);
+  const score1 =
+      TETRIS_WEIGHTS.agg   * aggregateHeight(b1)
+    + TETRIS_WEIGHTS.lines * lc1
+    + TETRIS_WEIGHTS.holes * countHoles(b1)
+    + TETRIS_WEIGHTS.bump  * countBumpiness(b1);
+
+  // 2) Sample one “next piece” on b1 via a real TetrisGame
+  const tNext = new TetrisGame();
+  tNext.board = deepCopy(b1);
+  tNext.rows  = ROWS;
+  tNext.cols  = COLS;
+  const nextPiece = tNext.spawn_piece();     // this.collides() now works
+  tNext.current_piece = nextPiece;
+
+  // 3) Evaluate *all* terminal moves of that next piece, pick the best
+  let best2 = -Infinity;
+  tNext.get_terminal_moves().forEach(m2 => {
+    const { newBoard: b2, linesCleared: lc2 } =
+      simulatePlacementOnBoard(b1, m2.piece);
+    const sc2 =
+        TETRIS_WEIGHTS.agg   * aggregateHeight(b2)
+      + TETRIS_WEIGHTS.lines * lc2
+      + TETRIS_WEIGHTS.holes * countHoles(b2)
+      + TETRIS_WEIGHTS.bump  * countBumpiness(b2);
+    if (sc2 > best2) best2 = sc2;
+  });
+
+  return score1 + best2;
+}
+
+
+  
+
+
+
+
+    // ====================== TETRIS GAME CLASS ======================
+// Helper: gravity drop for any floating blocks
+function applyGravity(board) {
+  for (let c = 0; c < COLS; c++) {
+    const stack = [];
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (board[r][c] === 1) stack.push(1);
+    }
+    for (let r = ROWS - 1; r >= 0; r--) {
+      board[r][c] = stack.length ? stack.shift() : 0;
+    }
+  }
+}
+
+// ====================== TETRIS GAME CLASS ======================
 // ====================== TETRIS GAME CLASS ======================
 class TetrisGame {
   constructor(cols=COLS, rows=ROWS){
@@ -1278,837 +1362,939 @@ class TetrisGame {
     }
   }
 }
-
-// ====================== TRAJECTORY BALANCE AGENT (old) ======================
-class TrajectoryBalanceAgent {
-  constructor(lr=0.01){
-    this.log_flows = {};
-    this.logZ = 0.0;
-    this.lr = lr;
-  }
-  _ensure_action_exists(state_key, action_key){
-    if(!this.log_flows[state_key]){
-      this.log_flows[state_key] = {};
-    }
-    if(!this.log_flows[state_key][action_key]){
-      const val = 0.5 + Math.random();
-      this.log_flows[state_key][action_key] = Math.log(val);
-    }
-  }
-  sample_action(state_key, candidates){
-    for(let c of candidates){
-      this._ensure_action_exists(state_key, c.action_key);
-    }
-    const logValues = candidates.map(c => this.log_flows[state_key][c.action_key]);
-    const max_log = Math.max(...logValues);
-    const exps = logValues.map(lv => Math.exp(lv - max_log));
-    const sum_exps = exps.reduce((a,b)=>a+b,0);
-    const probs = exps.map(e=> e/sum_exps);
-    const r = Math.random();
-    let cum=0, idx=0;
-    for(let i=0; i<probs.length; i++){
-      cum += probs[i];
-      if(r<=cum){
-        idx=i; break;
-      }
-    }
-    return [candidates[idx], probs[idx]];
-  }
-  get_log_p_action(state_key, action_key){
-    this._ensure_action_exists(state_key, action_key);
-    const all_logs = Object.values(this.log_flows[state_key]);
-    const max_val = Math.max(...all_logs);
-    const sum_exp = all_logs.reduce((acc,x)=> acc+Math.exp(x - max_val), 0);
-    const denom = Math.log(sum_exp)+max_val;
-    const numerator = this.log_flows[state_key][action_key];
-    return numerator - denom;
-  }
-  update_trajectory(traj, final_reward){
-    if(final_reward<=0) final_reward=0.01;
-    const logR = Math.log(final_reward);
-    let sum_logp=0;
-    for(let [s,a] of traj){
-      sum_logp += this.get_log_p_action(s,a);
-    }
-    const target = logR - this.logZ;
-    const diff = sum_logp - target;
-    // update logZ
-    this.logZ += this.lr*diff;
-    // update flows
-    for(let [s,a] of traj){
-      this.log_flows[s][a] -= this.lr*diff;
-    }
-  }
-  loadFromJSON(obj){
-    try {
-      this.log_flows = obj.log_flows || obj.weights || {};
-      this.logZ = obj.logZ || 0.0;
-      console.log("[agent] Loaded from JSON. (#states=", 
-          Object.keys(this.log_flows).length, ", logZ=", this.logZ, ")");
-    } catch(e){
-      console.error("[agent] Error loading from JSON:", e);
-    }
+// gravity helper (if needed elsewhere)
+function applyGravity(board) {
+  for (let c=0;c<COLS;c++) {
+    const stack = [];
+    for (let r=ROWS-1;r>=0;r--) if (board[r][c]) stack.push(1);
+    for (let r=ROWS-1;r>=0;r--) board[r][c] = stack.shift()||0;
   }
 }
 
-// ====================== NEURAL NET REPLACEMENT ======================
-// We'll load "pretrained_flows_nn.json" => with a big MLP (3 hidden layers).
-// We'll define a class that does forward pass: input => 214 dims => output => logFlow(s,a).
-// This matches the Python code that has state(212) + action(2) => 214 total.
-class NeuralFlowNet {
-  constructor(){
-    this.logZ= 0.0;
-    this.loaded= false;
-    // We'll store the named params:
-    // net.0.weight => shape [512, 214]
-    // net.0.bias   => shape [512]
-    // net.2.weight => shape [512,512]
-    // net.2.bias   => shape [512]
-    // net.4.weight => shape [512,512]
-    // net.4.bias   => shape [512]
-    // net.6.weight => shape [1,512]
-    // net.6.bias   => shape [1]
-    this.W0=null; this.b0=null;
-    this.W2=null; this.b2=null;
-    this.W4=null; this.b4=null;
-    this.W6=null; this.b6=null;
-  }
-  loadJson(obj){
-    this.logZ= obj.logZ || 0.0;
-    let w= obj.weights;
-    this.W0= w["net.0.weight"];
-    this.b0= w["net.0.bias"];
-    this.W2= w["net.2.weight"];
-    this.b2= w["net.2.bias"];
-    this.W4= w["net.4.weight"];
-    this.b4= w["net.4.bias"];
-    this.W6= w["net.6.weight"];
-    this.b6= w["net.6.bias"];
-    this.loaded= true;
-    console.log("[NeuralFlowNet] loaded. logZ=", this.logZ);
-  }
-  // matrix vector multiply
-  static matvec(W, x){
-    let rows= W.length;
-    let out= new Array(rows).fill(0);
-    for (let r=0; r<rows; r++){
-      let sum=0;
-      let row= W[r];
-      for (let c=0; c<row.length; c++){
-        sum+= row[c]* x[c];
-      }
-      out[r]= sum;
-    }
-    return out;
-  }
-  forward(x214){
-    // layer0
-    let z0= NeuralFlowNet.matvec(this.W0, x214);
-    for (let i=0; i<z0.length; i++){
-      z0[i]+= this.b0[i];
-      if (z0[i]<0) z0[i]=0; // ReLU
-    }
-    // layer2
-    let z2= NeuralFlowNet.matvec(this.W2, z0);
-    for (let i=0; i<z2.length; i++){
-      z2[i]+= this.b2[i];
-      if (z2[i]<0) z2[i]=0;
-    }
-    // layer4
-    let z4= NeuralFlowNet.matvec(this.W4, z2);
-    for (let i=0; i<z4.length; i++){
-      z4[i]+= this.b4[i];
-      if (z4[i]<0) z4[i]=0;
-    }
-    // layer6 => output => shape [1]
-    let z6= NeuralFlowNet.matvec(this.W6, z4);
-    let out= z6[0] + this.b6[0];
-    return out; // logFlow
-  }
-}
 
-// We'll define the encodeStateAction => 214 dims
-// board => 20*10=200
-// pieceOneHot =>7
-// piece x,y =>2
-// some heuristics => let's do holes, maxH, bump => 3 => total=212 for state
-// plus action =>2 => total=214
-function flattenBoard(board){
-  // 20 x10 =>200
-  let arr=[];
-  for (let r=0; r<board.length; r++){
-    arr.push(...board[r]);
-  }
-  return arr;
-}
-function countHoles(board){
-  let holes=0;
-  let rows= board.length;
-  let cols= board[0].length;
-  for (let c=0; c<cols; c++){
-    let blockFound=false;
-    for (let r=0; r<rows; r++){
-      if (board[r][c]===1) {
-        blockFound=true;
-      } else if (blockFound && board[r][c]===0){
-        holes++;
+    // ====================== TRAJECTORY BALANCE AGENT (old) ======================
+    class TrajectoryBalanceAgent {
+      constructor(lr=0.01){
+        this.log_flows = {};
+        this.logZ = 0.0;
+        this.lr = lr;
+      }
+      _ensure_action_exists(state_key, action_key){
+        if(!this.log_flows[state_key]){
+          this.log_flows[state_key] = {};
+        }
+        if(!this.log_flows[state_key][action_key]){
+          const val = 0.5 + Math.random();
+          this.log_flows[state_key][action_key] = Math.log(val);
+        }
+      }
+      sample_action(state_key, candidates){
+        for(let c of candidates){
+          this._ensure_action_exists(state_key, c.action_key);
+        }
+        const logValues = candidates.map(c => this.log_flows[state_key][c.action_key]);
+        const max_log = Math.max(...logValues);
+        const exps = logValues.map(lv => Math.exp(lv - max_log));
+        const sum_exps = exps.reduce((a,b)=>a+b,0);
+        const probs = exps.map(e=> e/sum_exps);
+        const r = Math.random();
+        let cum=0, idx=0;
+        for(let i=0; i<probs.length; i++){
+          cum += probs[i];
+          if(r<=cum){
+            idx=i; break;
+          }
+        }
+        return [candidates[idx], probs[idx]];
+      }
+      get_log_p_action(state_key, action_key){
+        this._ensure_action_exists(state_key, action_key);
+        const all_logs = Object.values(this.log_flows[state_key]);
+        const max_val = Math.max(...all_logs);
+        const sum_exp = all_logs.reduce((acc,x)=> acc+Math.exp(x - max_val), 0);
+        const denom = Math.log(sum_exp)+max_val;
+        const numerator = this.log_flows[state_key][action_key];
+        return numerator - denom;
+      }
+      update_trajectory(traj, final_reward){
+        if(final_reward<=0) final_reward=0.01;
+        const logR = Math.log(final_reward);
+        let sum_logp=0;
+        for(let [s,a] of traj){
+          sum_logp += this.get_log_p_action(s,a);
+        }
+        const target = logR - this.logZ;
+        const diff = sum_logp - target;
+        // update logZ
+        this.logZ += this.lr*diff;
+        // update flows
+        for(let [s,a] of traj){
+          this.log_flows[s][a] -= this.lr*diff;
+        }
+      }
+      loadFromJSON(obj){
+        try {
+          this.log_flows = obj.log_flows || obj.weights || {};
+          this.logZ = obj.logZ || 0.0;
+          console.log("[agent] Loaded from JSON. (#states=", 
+              Object.keys(this.log_flows).length, ", logZ=", this.logZ, ")");
+        } catch(e){
+          console.error("[agent] Error loading from JSON:", e);
+        }
       }
     }
-  }
-  return holes;
-}
-function boardMaxHeight(board){
-  let rows= board.length;
-  for (let r=0; r<rows; r++){
-    if (board[r].some(cell=>cell===1)){
-      return rows-r;
+    
+    // ====================== NEURAL NET REPLACEMENT ======================
+    // (intentionally left in place but will never load)—unchanged
+    class NeuralFlowNet {
+      constructor() {
+        this.logZ = 0.0;
+        this.loaded = false;
+        this.sharedW = null;
+        this.sharedb = null;
+        this.flowW   = null;
+        this.flowb   = null;
+        this.advW    = null;
+        this.advb    = null;
+      }
+      loadJson(o) {
+        this.logZ = o.logZ;
+        const w = o.weights;
+        this.sharedW = w["shared.0.weight"];
+        this.sharedb = w["shared.0.bias"];
+        this.flowW   = w["state_flow.weight"];
+        this.flowb   = w["state_flow.bias"];
+        this.advW    = w["advantage.weight"];
+        this.advb    = w["advantage.bias"];
+        this.loaded = true;
+        console.log("[NeuralFlowNet] loaded logZ=", this.logZ);
+      }
+      _linear(W, b, x) {
+        const out = new Float32Array(b.length);
+        const xLen = x.length;
+        for (let i = 0; i < b.length; i++) {
+          let sum = b[i];
+          const row = W[i];
+          for (let j = 0; j < row.length; j++) {
+            const xv = j < xLen ? x[j] : 0;
+            sum += row[j] * xv;
+          }
+          out[i] = sum;
+        }
+        return out;
+      }
+      forward(sa) {
+        if (!this.loaded) {
+          throw new Error("NeuralFlowNet.forward() called before loadJson()");
+        }
+        let h = this._linear(this.sharedW, this.sharedb, sa);
+        for (let i = 0; i < h.length; i++) if (h[i] < 0) h[i] = 0;
+        const z = this._linear(this.flowW, this.flowb, h)[0];
+        const a2 = sa.slice(sa.length - 2);
+        const ha = new Float32Array(h.length + 2);
+        ha.set(h, 0);
+        ha.set(a2, h.length);
+        const adv = this._linear(this.advW, this.advb, ha)[0];
+        return z + adv;
+      }
     }
+    
+    // ====================== ENCODING HELPERS ======================
+    function flattenBoard(board){
+      let arr=[];
+      for (let r=0; r<board.length; r++){
+        arr.push(...board[r]);
+      }
+      return arr;
+    }
+    function countHoles(board){
+      let holes=0;
+      let rows= board.length;
+      let cols= board[0].length;
+      for (let c=0; c<cols; c++){
+        let blockFound=false;
+        for (let r=0; r<rows; r++){
+          if (board[r][c]===1) blockFound=true;
+          else if (blockFound && board[r][c]===0) holes++;
+        }
+      }
+      return holes;
+    }
+    function boardMaxHeight(board){
+      let rows= board.length;
+      for (let r=0; r<rows; r++){
+        if (board[r].some(cell=>cell===1)) return rows-r;
+      }
+      return 0;
+    }
+    function countBumpiness(board){
+      let rows= board.length;
+      let cols= board[0].length;
+      let heights=[];
+      for (let c=0;c<cols;c++){
+        let h=0;
+        for (let r=0;r<rows;r++){
+          if (board[r][c]===1){ h= rows-r; break; }
+        }
+        heights.push(h);
+      }
+      let bump=0;
+      for (let c=0;c<cols-1;c++) bump+= Math.abs(heights[c]- heights[c+1]);
+      return bump;
+    }
+    function encodeState(board, piece){
+      let flat= flattenBoard(board);
+      let oh= new Array(7).fill(0);
+      let idx= PIECE_IDS[piece.type] || 0;
+      oh[idx]=1;
+      let px= piece.x/(COLS-1);
+      let py= piece.y/(ROWS-1);
+      let holes= countHoles(board);
+      let maxH= boardMaxHeight(board);
+      let bump= countBumpiness(board);
+      return flat.concat( oh, [px,py], [holes,maxH,bump] );
+    }
+    function encodeAction(aKey){
+      let [rPart,xPart]= aKey.split("_");
+      let rVal= parseInt(rPart.slice(1))/3.0;
+      let xVal= parseInt(xPart.slice(1))/(COLS-1);
+      return [rVal,xVal];
+    }
+    function encodeStateAction(board, piece, actionKey) {
+      let features = encodeState(board, piece).concat(encodeAction(actionKey));
+      const required = (nnModel && nnModel.loaded && nnModel.sharedW)
+        ? nnModel.sharedW[0].length
+        : features.length;
+      if (features.length < required) {
+        features = features.concat(
+          new Array(required - features.length).fill(0)
+        );
+      }
+      return features;
+    }
+    
+    // ====================== VISUAL EFFECTS ======================
+    class Particle { constructor(x,y,vx,vy,radius=4,life=1.0,color={r:255,g:255,b:255}){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.radius=radius; this.life=life; this.color=color;} update(dt){this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt * 0.4;} draw(ctx){ ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,2*Math.PI); let grad=ctx.createRadialGradient(this.x,this.y,this.radius/2,this.x,this.y,this.radius); grad.addColorStop(0,`rgba(${this.color.r},${this.color.g},${this.color.b},${this.life})`); grad.addColorStop(1,`rgba(${this.color.r},${this.color.g},${this.color.b},0)`); ctx.fillStyle=grad; ctx.fill(); }}
+    class Arrow { constructor(from,to,flow,color="#66ff66"){this.from=from;this.to=to;this.flow=flow;this.color=color;this.life=1.0;} update(dt){this.life -= dt*0.5;} draw(ctx){const rgb=hexToRgb(this.color);ctx.strokeStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.8*this.life})`;ctx.beginPath();ctx.moveTo(this.from.x,this.from.y);ctx.lineTo(this.to.x,this.to.y);ctx.stroke();let angle=Math.atan2(this.to.y - this.from.y,this.to.x - this.from.x);ctx.beginPath();ctx.moveTo(this.to.x,this.to.y);ctx.lineTo(this.to.x - 10*Math.cos(angle - Math.PI/6),this.to.y - 10*Math.sin(angle - Math.PI/6));ctx.lineTo(this.to.x - 10*Math.cos(angle + Math.PI/6),this.to.y - 10*Math.sin(angle + Math.PI/6));ctx.closePath();ctx.fillStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.8*this.life})`;ctx.fill();}}
+    
+    // ====================== "API" LOGIC (FRONT-END) ======================
+    function getCandidateMoves() {
+      const cands = game.get_terminal_moves();
+      if (nnModel && nnModel.loaded) {
+        let sumFlow = 0;
+        for (let c of cands) {
+          const stateVec = encoder.encode(game.board, game.current_piece.type);
+          const [rVal, xVal] = encodeAction(c.action_key);
+          const actFeat = new Float32Array([rVal, xVal]);
+          const sa = new Float32Array(stateVec.length + 2);
+          sa.set(stateVec, 0);
+          sa.set(actFeat, stateVec.length);
+          let logF = nnModel.forward(sa) / τ;
+          logF = Math.max(-20, Math.min(20, logF));
+          const f = Math.exp(logF);
+          c.flow = f;
+          sumFlow += f;
+        }
+        for (let c of cands) {
+          c.probability = sumFlow > 0 ? c.flow / sumFlow : 1 / cands.length;
+        }
+      } else {
+        const state_key = game.get_state_key();
+        let sumExp = 0;
+        for (let c of cands) {
+          agent._ensure_action_exists(state_key, c.action_key);
+          const fv = Math.exp(agent.log_flows[state_key][c.action_key]);
+          sumExp += fv;
+        }
+        for (let c of cands) {
+          const fv = Math.exp(agent.log_flows[state_key][c.action_key]);
+          c.flow = fv;
+          c.probability = sumExp > 0 ? fv / sumExp : 1.0 / cands.length;
+        }
+      }
+      return {
+        current_piece_center: game.get_piece_center(),
+        terminal_moves: cands,
+        game_state: { board: game.board, current_piece: game.current_piece, score: game.score, game_over: game.game_over }
+      };
+    }
+    
+    function selectMove(actionKey=null){
+      if(game.is_over()){ return { error:"Game Over" }; }
+      const cands = game.get_terminal_moves();
+      if(!cands || cands.length===0){ return { error:"No moves" }; }
+      let selected_action=null;
+      if(actionKey){ selected_action = cands.find(x=>x.action_key===actionKey) || null; }
+      if(!selected_action){
+        if(nnModel && nnModel.loaded){
+          cands.sort((a,b)=> (b.flow||0) - (a.flow||0));
+          selected_action= cands[0];
+        } else {
+          const state_key = game.get_state_key();
+          const [cand,_p] = agent.sample_action(state_key, cands);
+          selected_action=cand;
+        }
+      }
+      trajectory.push([game.get_state_key(), selected_action.action_key]);
+      game.target_piece = deepCopy(selected_action.piece);
+      const arrow_info={ from: game.get_piece_center(game.current_piece), to: selected_action.piece_center, flow: selected_action.flow||0, probability: selected_action.probability||0 };
+      return { action_key: selected_action.action_key, arrow: arrow_info, game_state: { board: game.board, current_piece: game.current_piece, score: game.score, game_over: game.game_over, piece_id: game.piece_id }};
+    }
+    function tickGameLogic() {
+      const oldGameOver = game.is_over();
+      const oldPieceId  = game.piece_id;
+      game.tick();
+      const newGameOver = game.is_over();
+      const newPieceId  = game.piece_id;
+      if (newGameOver && !oldGameOver) {
+        const finalReward = game.get_final_reward();
+        agent.update_trajectory(trajectory, finalReward);
+        trajectory = [];
+        game.reset_game();
+      }
+      let terminal_moves = [];
+      if (newPieceId !== oldPieceId && !game.is_over()) {
+        const cands = game.get_terminal_moves();
+        if (nnModel && nnModel.loaded) {
+          let sumFlow = 0;
+          for (let c of cands) {
+            const stateVec = encoder.encode(game.board, game.current_piece.type);
+            const [rVal, xVal] = encodeAction(c.action_key);
+            const sa = new Float32Array(stateVec.length + 2);
+            sa.set(stateVec, 0);
+            sa.set([rVal, xVal], stateVec.length);
+            let logF = nnModel.forward(sa);
+            logF = Math.max(-20, Math.min(20, logF));
+            const f = Math.exp(logF);
+            c.flow = f;
+            sumFlow += f;
+          }
+          for (let c of cands) {
+            c.probability = sumFlow > 0 ? c.flow / sumFlow : 1.0 / cands.length;
+            terminal_moves.push(c);
+          }
+        } else {
+          const stateKey = game.get_state_key();
+          let sumExp = 0;
+          for (let c of cands) {
+            agent._ensure_action_exists(stateKey, c.action_key);
+            const val = Math.exp(agent.log_flows[stateKey][c.action_key]);
+            sumExp += val;
+          }
+          for (let c of cands) {
+            const val = Math.exp(agent.log_flows[stateKey][c.action_key]);
+            c.flow = val;
+            c.probability = sumExp > 0 ? val / sumExp : 1.0 / cands.length;
+            terminal_moves.push(c);
+          }
+        }
+      }
+      return { game_state: { board: game.board, current_piece: game.current_piece, score: game.score, game_over: game.game_over, piece_id: game.piece_id }, current_piece_center: game.get_piece_center(), terminal_moves };
+    }
+    function resetGameLogic() {
+      game.reset_game();
+      trajectory = [];
+      return { status: "reset" };
   }
-  return 0;
-}
-function countBumpiness(board){
-  let rows= board.length;
-  let cols= board[0].length;
-  let heights=[];
-  for (let c=0;c<cols;c++){
-    let h=0;
-    for (let r=0;r<rows;r++){
-      if (board[r][c]===1){
-        h= rows-r;
+  
+  
+  // ====================== UI & ANIMATION ======================
+  
+  function assignCandidateColors(cands) {
+      cands.forEach((cand, i) => {
+          cand.color = i === 0
+              ? "#33ff66"
+              : i === 1
+                  ? "#ffd700"
+                  : i === 2
+                      ? "#ff6666"
+                      : "#dddddd";
+      });
+  }
+  
+  function drawBoard(gs) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#222";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+      if (!gs || !gs.board) return;
+  
+      for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+              if (gs.board[r][c]) {
+                  ctx.fillStyle = "#666";
+                  ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                  ctx.strokeStyle = "#444";
+                  ctx.strokeRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+              } else {
+                  ctx.strokeStyle = "rgba(255,255,255,0.05)";
+                  ctx.strokeRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+              }
+          }
+      }
+  }
+  
+  function drawCurrentPiece(gs) {
+      if (!gs || !gs.current_piece) return;
+  
+      const piece = gs.current_piece;
+      let grad = ctx.createLinearGradient(0, 0, 0, piece.shape.length * CELL_SIZE);
+      grad.addColorStop(0, "#c0c0c0");
+      grad.addColorStop(1, "#a0a0a0");
+      ctx.fillStyle = grad;
+  
+      for (let r = 0; r < piece.shape.length; r++) {
+          for (let c = 0; c < piece.shape[r].length; c++) {
+              if (piece.shape[r][c]) {
+                  const x = (piece.x + c) * CELL_SIZE;
+                  const y = (piece.y + r) * CELL_SIZE;
+                  ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+                  ctx.strokeStyle = "#888";
+                  ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+              }
+          }
+      }
+  }
+  
+  function drawCandidateShadow(piece, color) {
+      if (!piece || !piece.shape) return;
+  
+      ctx.save();
+      const rgb = hexToRgb(color || "#fff");
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.2)`;
+  
+      for (let r = 0; r < piece.shape.length; r++) {
+          for (let c = 0; c < piece.shape[r].length; c++) {
+              if (piece.shape[r][c]) {
+                  const x = (piece.x + c) * CELL_SIZE;
+                  const y = (piece.y + r) * CELL_SIZE;
+                  ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+              }
+          }
+      }
+  
+      ctx.restore();
+  }
+  
+  function draw() {
+      drawBoard(currentGameState);
+      drawCurrentPiece(currentGameState);
+  
+      topCandidates.forEach(c => {
+          let arr = new Arrow(currentPieceCenter, c.piece_center, c.flow, c.color);
+          arr.draw(ctx);
+          drawCandidateShadow(c.piece, c.color);
+      });
+  
+      appliedArrows.forEach(a => a.draw(ctx));
+      particles.forEach(p => p.draw(ctx));
+  }
+  
+  function animate() {
+      let now = performance.now();
+      let dt = (now - lastTime) / 1000;
+      lastTime = now;
+  
+      particleSpawnAccumulator += dt;
+      if (particleSpawnAccumulator > 1.0) {
+          if (topCandidates.length > 0) {
+              let maxFlow = topCandidates[0].flow || 1;
+              topCandidates.forEach((cand, i) => {
+                  let ratio = cand.flow / maxFlow;
+                  if (i === 0) ratio *= 2;
+                  else if (i === 1) ratio *= 1;
+                  else if (i === 2) ratio *= 0.3;
+                  // spawnParticles(currentPieceCenter, cand.piece_center, ratio, cand.color);
+              });
+          }
+          particleSpawnAccumulator = 0;
+      }
+  
+      for (let i = particles.length - 1; i >= 0; i--) {
+          particles[i].update(dt);
+          if (particles[i].life <= 0) particles.splice(i, 1);
+      }
+  
+      appliedArrows.forEach(a => a.update(dt));
+      draw();
+      requestAnimationFrame(animate);
+  }
+  
+  function ensureMoveUniqueness(moves) {
+      const seen = new Set();
+  
+      return moves.filter(move => {
+          const coords = [];
+          move.piece.shape.forEach((row, r) => {
+              row.forEach((v, c) => {
+                  if (v) coords.push(`${move.piece.x + c},${move.piece.y + r}`);
+              });
+          });
+          coords.sort();
+  
+          const key = coords.join(";");
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+      });
+  }
+  
+  
+  // ====================== FRONT-END "ENDPOINTS" ======================
+  
+
+/**
+ * Classic Tetris evaluation weights (aggregateHeight, linesCleared, holes, bumpiness)
+ * from the well‑known “Bertsimas & Tsitsiklis”/“Tetris Guideline” AI.
+ */
+ const TETRIS_WEIGHTS = {
+  agg:   -4.500158825082766,
+  lines:  3.4181268101392694,
+  holes: -3.2178882868487753,
+  bump:  -9.348695305445199
+};
+
+function aggregateHeight(board) {
+  let total = 0;
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      if (board[r][c]) {
+        total += ROWS - r;
         break;
       }
     }
-    heights.push(h);
   }
-  let bump=0;
-  for (let c=0;c<cols-1;c++){
-    bump+= Math.abs(heights[c]- heights[c+1]);
-  }
-  return bump;
-}
-function encodeState(board, piece){
-  // flatten =>200
-  let flat= flattenBoard(board);
-  // pieceOneHot =>7
-  let oh= new Array(7).fill(0);
-  let idx= PIECE_IDS[piece.type] || 0;
-  oh[idx]=1;
-  // piece coords =>2 => normalized
-  let px= piece.x/(COLS-1);
-  let py= piece.y/(ROWS-1);
-  // heuristics => holes, maxH, bump =>3
-  let holes= countHoles(board);
-  let maxH= boardMaxHeight(board);
-  let bump= countBumpiness(board);
-  let features= flat.concat( oh, [px,py], [holes,maxH,bump] );
-  return features; // length=212
-}
-function encodeAction(aKey){
-  // "r2_x3" => parse => rVal =>2/3, xVal=>3/(COLS-1)
-  let [rPart,xPart]= aKey.split("_"); // e.g. "r2","x3"
-  let rotStr= rPart.slice(1); // "2"
-  let xStr= xPart.slice(1);   // "3"
-  let rVal= parseInt(rotStr)/3.0;
-  let xVal= parseInt(xStr)/(COLS-1);
-  return [rVal,xVal]; // length=2
-}
-function encodeStateAction(board, piece, actionKey){
-  let st= encodeState(board, piece); // 212
-  let ac= encodeAction(actionKey);   // 2
-  return st.concat(ac); // 214
+  return total;
 }
 
-// ====================== VISUAL EFFECTS ======================
-class Particle {
-  constructor(x,y,vx,vy,radius=4,life=1.0,color={r:255,g:255,b:255}){
-    this.x=x; this.y=y; this.vx=vx; this.vy=vy;
-    this.radius=radius; this.life=life; this.color=color;
-  }
-  update(dt) {
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-    // Instead of 0.4, use something like 0.8 => ~1.25s lifetime
-    this.life -= dt * 0.4;
-  }
-  
-  draw(ctx){
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
-    let grad=ctx.createRadialGradient(this.x,this.y,this.radius/2,this.x,this.y,this.radius);
-    grad.addColorStop(0,`rgba(${this.color.r},${this.color.g},${this.color.b},${this.life})`);
-    grad.addColorStop(1,`rgba(${this.color.r},${this.color.g},${this.color.b},0)`);
-    ctx.fillStyle=grad;
-    ctx.fill();
-  }
-}
-class Arrow {
-  constructor(from,to,flow,color="#66ff66"){
-    this.from=from; this.to=to; this.flow=flow; this.color=color;
-    this.life=1.0;
-  }
-  update(dt){
-    this.life -= dt*0.5;
-  }
-  draw(ctx){
-    const rgb=hexToRgb(this.color);
-   // let lineWidth = Math.min(10, 2+this.flow/2000);
-    ctx.strokeStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.8*this.life})`;
-    // ctx.lineWidth=lineWidth;
-    ctx.beginPath();
-    ctx.moveTo(this.from.x,this.from.y);
-    ctx.lineTo(this.to.x,this.to.y);
-    ctx.stroke();
-    let angle=Math.atan2(this.to.y - this.from.y,this.to.x - this.from.x);
-    ctx.beginPath();
-    ctx.moveTo(this.to.x,this.to.y);
-    ctx.lineTo(this.to.x - 10*Math.cos(angle - Math.PI/6),
-               this.to.y - 10*Math.sin(angle - Math.PI/6));
-    ctx.lineTo(this.to.x - 10*Math.cos(angle + Math.PI/6),
-               this.to.y - 10*Math.sin(angle + Math.PI/6));
-    ctx.closePath();
-    ctx.fillStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.8*this.life})`;
-    ctx.fill();
-  }
-}
-
-// ====================== "API" LOGIC (FRONT-END) ======================
-function getCandidateMoves(){
-  if(game.is_over()){
-    return {
-      current_piece_center: game.get_piece_center(),
-      terminal_moves: [],
-      game_state: {
-        board: game.board,
-        current_piece: game.current_piece,
-        score: game.score,
-        game_over: game.game_over
-      }
-    };
-  }
-  const cands = game.get_terminal_moves();
-  const result=[];
-  // If neural net is loaded, we'll compute logFlow => flow => prob
-  // Otherwise, we fallback to the old "agent" table or random
-  if(nnModel && nnModel.loaded){
-    let sumFlow=0;
-    for(let c of cands){
-      let sa= encodeStateAction(game.board, game.current_piece, c.action_key);
-      let logF= nnModel.forward(sa);
-      // clamp to avoid overflow
-      if(logF>20) logF=20;
-      if(logF<-20) logF=-20;
-      let flow= Math.exp(logF);
-      c.flow=flow;
-      sumFlow+= flow;
-    }
-    for(let c of cands){
-      c.probability= (sumFlow>0) ? (c.flow/sumFlow) : (1.0/cands.length);
-      result.push(c);
-    }
-  } else {
-    // fallback => like the old approach with agent
-    const state_key = game.get_state_key();
-    let sum_exp=0;
-    for(let c of cands){
-      agent._ensure_action_exists(state_key,c.action_key);
-      const val=Math.exp(agent.log_flows[state_key][c.action_key]);
-      sum_exp += val;
-    }
-    for(let c of cands){
-      const flow_val=Math.exp(agent.log_flows[state_key][c.action_key]);
-      const prob = (sum_exp>0)? flow_val/sum_exp : (1.0/cands.length);
-      c.flow=flow_val; 
-      c.probability=prob;
-      result.push(c);
-    }
-  }
-  return {
-    current_piece_center: game.get_piece_center(),
-    terminal_moves: result,
-    game_state: {
-      board: game.board,
-      current_piece: game.current_piece,
-      score: game.score,
-      game_over: game.game_over
-    }
-  };
-}
-
-function selectMove(actionKey=null){
-  if(game.is_over()){
-    return { error:"Game Over" };
-  }
-  const cands = game.get_terminal_moves();
-  if(!cands || cands.length===0){
-    return { error:"No moves" };
-  }
-  let selected_action=null;
-  if(actionKey){
-    selected_action = cands.find(x=>x.action_key===actionKey) || null;
-  }
-  if(!selected_action){
-    // auto pick the top candidate if using NN => best flow
-    if(nnModel && nnModel.loaded){
-      // pick candidate with the highest c.flow
-      cands.sort((a,b)=> (b.flow||0) - (a.flow||0));
-      selected_action= cands[0];
-    } else {
-      // fallback => sample from old agent
-      const state_key = game.get_state_key();
-      const [cand,_p] = agent.sample_action(state_key, cands);
-      selected_action=cand;
-    }
-  }
-  trajectory.push([game.get_state_key(), selected_action.action_key]);
-  game.target_piece = deepCopy(selected_action.piece);
-  const arrow_info={
-    from: game.get_piece_center(game.current_piece),
-    to: selected_action.piece_center,
-    flow: selected_action.flow||0,
-    probability: selected_action.probability||0
-  };
-  return {
-    action_key: selected_action.action_key,
-    arrow: arrow_info,
-    game_state:{
-      board: game.board,
-      current_piece: game.current_piece,
-      score: game.score,
-      game_over: game.game_over,
-      piece_id: game.piece_id
-    }
-  };
-}
-function tickGameLogic(){
-  const old_go=game.is_over();
-  const old_pid=game.piece_id;
-  game.tick();
-  const new_go=game.is_over();
-  const new_pid=game.piece_id;
-  if(new_go && !old_go){
-    const final_reward=game.get_final_reward();
-    agent.update_trajectory(trajectory, final_reward);
-    trajectory=[];
-    game.reset_game();
-  }
-  let terminal_moves=[];
-  if(new_pid!==old_pid && !game.is_over()){
-    const cands= game.get_terminal_moves();
-    if(nnModel && nnModel.loaded){
-      let sumFlow=0;
-      for(let c of cands){
-        let sa= encodeStateAction(game.board, game.current_piece, c.action_key);
-        let logF= nnModel.forward(sa);
-        if(logF>20) logF=20;
-        if(logF<-20) logF=-20;
-        let fv= Math.exp(logF);
-        c.flow= fv;
-        sumFlow+= fv;
-      }
-      for(let c of cands){
-        c.probability= sumFlow>0 ? (c.flow/sumFlow) : (1.0/cands.length);
-        terminal_moves.push(c);
-      }
-    } else {
-      // fallback => old agent
-      const state_key= game.get_state_key();
-      let sum_exp=0;
-      for(let c of cands){
-        agent._ensure_action_exists(state_key,c.action_key);
-        sum_exp+= Math.exp(agent.log_flows[state_key][c.action_key]);
-      }
-      for(let c of cands){
-        const fv=Math.exp(agent.log_flows[state_key][c.action_key]);
-        const prob = sum_exp>0 ? fv/sum_exp : (1.0/cands.length);
-        c.flow=fv; 
-        c.probability=prob;
-        terminal_moves.push(c);
+/**
+ * Simulate dropping `piece` onto the current `game.board`,
+ * clear lines, and return the resulting board + number of lines.
+ */
+ function simulatePlacementOnBoard(board, piece) {
+  const b = deepCopy(board);
+  const shape = piece.shape;
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (shape[r][c]) {
+        b[piece.y + r][piece.x + c] = 1;
       }
     }
   }
-  return {
-    game_state:{
-      board: game.board,
-      current_piece: game.current_piece,
-      score: game.score,
-      game_over: game.game_over,
-      piece_id: game.piece_id
-    },
-    current_piece_center: game.get_piece_center(),
-    terminal_moves: terminal_moves
-  };
-}
-function resetGameLogic(){
-  game.reset_game();
-  trajectory=[];
-  return {status:"reset"};
+  const newBoard = b.filter(row => !row.every(cell => cell === 1));
+  const linesCleared = b.length - newBoard.length;
+  for (let i = 0; i < linesCleared; i++) {
+    newBoard.unshift(new Array(COLS).fill(0));
+  }
+  return { newBoard, linesCleared };
 }
 
-// ====================== UI & ANIMATION ======================
-function assignCandidateColors(candidates){
-  candidates.forEach((cand,i)=>{
-    if(i===0) cand.color="#33ff66";
-    else if(i===1) cand.color="#ffd700";
-    else if(i===2) cand.color="#ff6666";
-    else cand.color="#dddddd";
-  });
-}
-function drawBoard(gs){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle="#222";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  if(!gs||!gs.board) return;
-  for(let r=0; r<ROWS; r++){
-    for(let c=0; c<COLS; c++){
-      if(gs.board[r][c]){
-        ctx.fillStyle="#666";
-        ctx.fillRect(c*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-        ctx.strokeStyle="#444";
-        ctx.strokeRect(c*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-      } else {
-        ctx.strokeStyle="rgba(255,255,255,0.05)";
-        ctx.strokeRect(c*CELL_SIZE,r*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-      }
-    }
-  }
-}
-function drawCurrentPiece(gs){
-  if(!gs||!gs.current_piece) return;
-  const piece = gs.current_piece;
-  let grad=ctx.createLinearGradient(0,0,0,piece.shape.length*CELL_SIZE);
-  grad.addColorStop(0,"#c0c0c0");
-  grad.addColorStop(1,"#a0a0a0");
-  ctx.fillStyle=grad;
-  for(let r=0; r<piece.shape.length; r++){
-    for(let c=0; c<piece.shape[r].length; c++){
-      if(piece.shape[r][c]){
-        const x=(piece.x+c)*CELL_SIZE;
-        const y=(piece.y+r)*CELL_SIZE;
-        ctx.fillRect(x,y,CELL_SIZE,CELL_SIZE);
-        ctx.strokeStyle="#888";
-        ctx.strokeRect(x,y,CELL_SIZE,CELL_SIZE);
-      }
-    }
-  }
-}
-function drawCandidateShadow(piece,color){
-  if(!piece||!piece.shape)return;
-  ctx.save();
-  const rgb=hexToRgb(color||"#fff");
-  ctx.fillStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},0.2)`;
-  for(let r=0; r<piece.shape.length; r++){
-    for(let c=0; c<piece.shape[r].length; c++){
-      if(piece.shape[r][c]){
-        const x=(piece.x+c)*CELL_SIZE;
-        const y=(piece.y+r)*CELL_SIZE;
-        ctx.fillRect(x,y,CELL_SIZE,CELL_SIZE);
-      }
-    }
-  }
-  ctx.restore();
-}
-function spawnParticles(from, to, factor=1, color) {
-  // Instead of 7, reduce base count to 3
-  let count = Math.max(1, Math.round(4 * factor));
 
-  let dx = to.x - from.x;
-  let dy = to.y - from.y;
-  let dist = Math.hypot(dx, dy) || 1;
-  let ux = dx / dist;
-  let uy = dy / dist;
-  let baseColor = color ? hexToRgb(color) : {r:255, g:255, b:255};
 
-  for (let i = 0; i < count; i++) {
-    const t = Math.random();
-    const x = from.x + dx * t;
-    const y = from.y + dy * t;
-    // Lower speed from (30 + random * 20) to e.g. (12 + random * 8)
-    let speed = 12 + Math.random() * 8;
-    let vx = ux * speed + (Math.random() - 0.5) * 5;  // smaller random offset
-    let vy = uy * speed + (Math.random() - 0.5) * 5;
-    particles.push(new Particle(x, y, vx, vy, 4, 1.0, baseColor));
+function doSelectCandidate(actionKey) {
+  simulationPaused = true;
+
+  const data = selectMove(actionKey);
+  if (data.error) {
+    console.error("[doSelectCandidate] error:", data.error);
+    simulationPaused = false;
+    return;
   }
-}
 
-function spawnArrow(from,to,flow,color){
-  appliedArrows.push(new Arrow(from,to,flow,color));
-}
-function drawEffects(){
-  appliedArrows.forEach(a=>a.draw(ctx));
-  particles.forEach(p=>p.draw(ctx));
-}
-function draw(){
-  drawBoard(currentGameState);
-  drawCurrentPiece(currentGameState);
-  topCandidates.forEach(c=>{
-    let arr=new Arrow(currentPieceCenter,c.piece_center,c.flow,c.color);
-    arr.draw(ctx);
-    drawCandidateShadow(c.piece,c.color);
-  });
-  drawEffects();
-}
-function animate(){
-  let now=performance.now();
-  let dt=(now - lastTime)/1000;
-  lastTime=now;
+  // 1) Immediately rotate the current piece to the target shape
+  game.current_piece.shape = deepCopy(data.arrow ? 
+    // find the candidate that matched the arrow
+    topCandidates.find(c =>
+      Math.abs(c.piece_center.x - data.arrow.to.x) < 1 &&
+      Math.abs(c.piece_center.y - data.arrow.to.y) < 1
+    ).piece.shape
+    : game.current_piece.shape
+  );
 
-  particleSpawnAccumulator += dt;
-  // Instead of 0.25, wait a full second:
-  if (particleSpawnAccumulator > 1.0) {
-    if (topCandidates.length > 0) {
-      let maxFlow = topCandidates[0].flow || 1;
-      topCandidates.forEach((cand, i) => {
-        // Reduce these multipliers
-        let ratio = cand.flow / maxFlow;
-        if (i === 0) ratio *= 2;   // was 3
-        else if (i === 1) ratio *= 1; // was 1.5
-        else if (i === 2) ratio *= 0.3; // was 0.5
-        spawnParticles(currentPieceCenter, cand.piece_center, ratio, cand.color);
-      });
-    }
-    particleSpawnAccumulator = 0;
+  // 2) Then set up the smooth drop animation
+  if (data.arrow) {
+    let arrowData = data.arrow;
+    let cand = topCandidates.find(c =>
+      Math.abs(c.piece_center.x - arrowData.to.x) < 1 &&
+      Math.abs(c.piece_center.y - arrowData.to.y) < 1
+    );
+    let color = cand ? cand.color : "#33ff66";
+    appliedArrows.push(new Arrow(arrowData.from, arrowData.to, arrowData.flow, color));
   }
-  
-  for(let i=particles.length-1; i>=0; i--){
-    particles[i].update(dt);
-    if(particles[i].life<=0){
-      particles.splice(i,1);
-    }
-  }
-  appliedArrows.forEach(a=>a.update(dt));
-  draw();
-  requestAnimationFrame(animate);
-}
 
-// ====================== FRONT-END "ENDPOINTS" ======================
-function fetchCandidateMoves(){
-  if (simulationPaused) return;
-  const data = getCandidateMoves();
   currentGameState = data.game_state || {};
-  currentPieceCenter = data.current_piece_center || {x:0,y:0};
-  candidateMoves = data.terminal_moves || [];
-  // if empty => done
-  if (!candidateMoves.length){
-    topCandidates=[];
+  setTimeout(() => { simulationPaused = false; }, MOVE_PAUSE_DURATION);
+}
+
+  function tickGame() {
+      if (!simulationPaused) {
+          const data = tickGameLogic();
+          currentGameState = data.game_state || {};
+          currentPieceCenter = data.current_piece_center || { x: 0, y: 0 };
+          const newPieceId = currentGameState.piece_id;
+  
+          if (typeof newPieceId !== "undefined" && newPieceId !== lastPieceId) {
+              lastPieceId = newPieceId;
+              setTimeout(fetchCandidateMoves, 200);
+          }
+      }
+  }
+  
+  function doResetGame() {
+      resetGameLogic();
+      currentGameState = null;
+      currentPieceCenter = { x: 0, y: 0 };
+      candidateMoves = [];
+      topCandidates = [];
+      appliedArrows = [];
+      particles = [];
+      simulationPaused = false;
+      lastPieceId = null;
+      candidateListEl.innerHTML = "";
+      fetchCandidateMoves();
+  }
+
+// ====================== FETCH + RENDER ======================
+
+ function clearRowsAndDrop(board, rowsToClear) {
+  if (rowsToClear.length === 0) return;
+  const cols = board[0].length;
+  const rows = board.length;
+
+  // 1) clear the rows
+  rowsToClear.sort((a, b) => a - b);
+  for (let r of rowsToClear) {
+    for (let c = 0; c < cols; c++) {
+      board[r][c] = 0;
+    }
+  }
+
+  // 2) gravity for cells above the *highest* cleared row:
+  const limit = Math.min(...rowsToClear);
+  for (let c = 0; c < cols; c++) {
+    // scan from just above the highest cleared row up to the top
+    for (let r = limit - 1; r >= 0; r--) {
+      if (board[r][c] === 1) {
+        let dest = r;
+        // fall until the next cell is occupied or bottom
+        while (dest + 1 < rows && board[dest + 1][c] === 0) {
+          dest++;
+        }
+        if (dest !== r) {
+          board[dest][c] = 1;
+          board[r][c]    = 0;
+        }
+      }
+    }
+  }
+}
+// helper: depth of the well in column c (count of empty cells from bottom until first block)
+function computeWellDepth(board, c) {
+  let depth = 0;
+  for (let r = board.length - 1; r >= 0; r--) {
+    if (board[r][c] === 0) depth++;
+    else break;
+  }
+  return depth;
+}
+
+// helper: find how far down a piece at (x, y) of height h would land
+function landingRow(board, x, height) {
+  // start from top of board and scan down to find first filled cell
+  for (let y = 0; y <= board.length - height; y++) {
+    let collision = false;
+    for (let dy = 0; dy < height; dy++) {
+      if (board[y+dy][x]) { collision = true; break; }
+    }
+    if (collision) {
+      // can't occupy at y because there's a block; so it must land one row above
+      return y - 1;
+    }
+  }
+  // no collision at all: lands at bottom
+  return board.length - height;
+}
+
+function fetchCandidateMoves() {
+  if (simulationPaused) return;
+
+  // 1) raw moves & dedupe
+  const data = getCandidateMoves();
+  currentGameState   = data.game_state || {};
+  currentPieceCenter = data.current_piece_center || { x:0, y:0 };
+  let moves = ensureMoveUniqueness(data.terminal_moves || []);
+  if (!moves.length) {
+    topCandidates = [];
     updateCandidateListUI();
     return;
   }
 
-  // 1) Sort or find max
-  candidateMoves.sort((a,b)=>(b.flow||0) - (a.flow||0));
-  let maxFlowVal = candidateMoves[0].flow || 1;
-  // 2) Normalize each flow by dividing by that max
-  candidateMoves.forEach(c=>{
-    c.flowNormalized = c.flow / maxFlowVal; 
-  });
-  // 3) Possibly multiply by some factor, e.g. 100, to display as small integers
-  candidateMoves.forEach(c=>{
-    c.flowDisplay = (c.flowNormalized * 100).toFixed(2);
+  // 2) board stats
+  const oldBoard = game.board;
+  const oldMaxH  = boardMaxHeight(oldBoard);
+  const oldHoles = countHoles(oldBoard);
+
+  // 3) simulate each move & capture post‑clear
+  let sumFlow = 0, maxFlow = 0;
+  moves.forEach(m => {
+    // a) raw flow
+    const sk = game.get_state_key();
+    let f;
+    if (nnModel && nnModel.loaded) {
+      const vec = new Float32Array(encodeStateAction(oldBoard, game.current_piece, m.action_key));
+      f = Math.exp(Math.max(-20, Math.min(20, nnModel.forward(vec))));
+    } else {
+      agent._ensure_action_exists(sk, m.action_key);
+      f = Math.exp(agent.log_flows[sk][m.action_key]);
+    }
+    m.rawFlow = f;
+    sumFlow  += f;
+    maxFlow   = Math.max(maxFlow, f);
+
+    // b) stamp piece
+    let bc = deepCopy(oldBoard);
+    m.piece.shape.forEach((row, r) =>
+      row.forEach((v,c) => { if (v) bc[m.piece.y+r][m.piece.x+c] = 1; })
+    );
+
+    // c) clear + gravity cascade
+    let totalClears = 0;
+    let fullRows = bc
+      .map((row,i) => row.every(v=>v===1) ? i : -1)
+      .filter(i => i>=0);
+    while (fullRows.length) {
+      clearRowsAndDrop(bc, fullRows);
+      totalClears += fullRows.length;
+      fullRows = bc
+        .map((row,i) => row.every(v=>v===1) ? i : -1)
+        .filter(i => i>=0);
+    }
+
+    // d) metrics
+    m.linesCleared = totalClears;
+    m.resultHeight = boardMaxHeight(bc);
+    m.heightInc    = m.resultHeight > oldMaxH;
+    m.holeDelta    = countHoles(bc) - oldHoles;
+    m.resultBoard  = bc;
   });
 
-  // We'll keep flow for probability, but for display use c.flowDisplay
-  topCandidates = candidateMoves.slice(0,3);
+  // 4) beam‑blend
+  const beamScores = moves.map(m => beamEvaluate(m));
+  const minB = Math.min(...beamScores), maxB = Math.max(...beamScores);
+  const bDen = (maxB - minB) || 1, α = 0.7;
+
+  // 5) combinedScore + bonuses
+  moves.forEach((m,i) => {
+    // base blend
+    const flowN = m.rawFlow / maxFlow;
+    const beamN = (beamScores[i] - minB) / bDen;
+    m.combinedScore = α*flowN + (1-α)*beamN;
+
+    // your heuristics
+    if (m.holeDelta > 0) m.combinedScore -= 1;
+    if (m.heightInc)     m.combinedScore -= 1;
+    if (m.holeDelta < 0) m.combinedScore += (-m.holeDelta)*0.8;
+    m.combinedScore += (oldMaxH - m.resultHeight)*0.2;
+
+    // enforce “outside vertical I/L” rule
+    const w = m.piece.shape[0].length;
+    const h = m.piece.shape.length;
+    const isVertical = w === 1 && (m.piece.type === 'I' || m.piece.type === 'L');
+    if (isVertical) {
+      const col = m.piece.x;
+      // only column 0 or COLS-1
+      if (col === 0 || col === COLS-1) {
+        // simulate where it would land
+        const landY = landingRow(oldBoard, col, h);
+        // ensure that *all* cells at (col, landY..landY+h-1) are empty
+        let canFit = true;
+        for (let dy = 0; dy < h; dy++) {
+          if (oldBoard[landY + dy][col]) {
+            canFit = false; break;
+          }
+        }
+        if (canFit) {
+          // huge bonus to guarantee we pick it
+          m.combinedScore += 100;
+        }
+      }
+    }
+  });
+
+  // 6) bucket by preference
+  const clears     = moves.filter(m=>m.linesCleared>0);
+  const holeFills  = moves.filter(m=>!m.linesCleared && m.holeDelta<0 && !m.heightInc);
+  const cleanFlats = moves.filter(m=>!m.linesCleared && m.holeDelta===0 && !m.heightInc);
+  let preferred = clears.length   ? clears
+                : holeFills.length? holeFills
+                : cleanFlats.length? cleanFlats
+                : moves;
+
+  // 7) top‑3 + backfill
+  preferred.sort((a,b)=>b.combinedScore - a.combinedScore);
+  const chosen = preferred.slice(0,3);
+  for (let m of moves.sort((a,b)=>b.combinedScore - a.combinedScore)) {
+    if (chosen.length>=3) break;
+    if (!chosen.includes(m)) chosen.push(m);
+  }
+
+  // 8) annotate
+  chosen.forEach(m => {
+    m.flowDisplay = (m.rawFlow/maxFlow).toFixed(2);
+    m.prob        = m.rawFlow / sumFlow;
+    m.probDisplay = (m.prob*100).toFixed(1) + '%';
+  });
+
+  // 9) final sort
+  chosen.sort((a,b)=>
+    a.resultHeight - b.resultHeight ||
+    b.combinedScore - a.combinedScore
+  );
+
+  // 🔟 render
+  topCandidates = chosen;
   assignCandidateColors(topCandidates);
   updateCandidateListUI();
-
-  // auto-select top
-  const firstCandidateEl = candidateListEl.querySelector(".candidate");
-  if(firstCandidateEl){
-    firstCandidateEl.click();
-  }
+  const first = candidateListEl.querySelector('.candidate');
+  if (first) first.click();
 }
 
-function doSelectCandidate(actionKey){
-  simulationPaused=true;
-  const data = selectMove(actionKey);
-  if(data.error){
-    console.error("[doSelectCandidate] error:", data.error);
-    simulationPaused=false;
-    return;
-  }
-  if(data.arrow){
-    let arrowData=data.arrow;
-    let cand=topCandidates.find(c=>
-      Math.abs(c.piece_center.x - arrowData.to.x)<1 &&
-      Math.abs(c.piece_center.y - arrowData.to.y)<1
-    );
-    let color=cand?cand.color:"#33ff66";
-    spawnArrow(arrowData.from, arrowData.to, arrowData.flow, color);
-  }
-  currentGameState=data.game_state||{};
-  setTimeout(()=>{ simulationPaused=false; }, MOVE_PAUSE_DURATION);
-}
-function tickGame(){
-  if(!simulationPaused){
-    const data=tickGameLogic();
-    currentGameState=data.game_state||{};
-    currentPieceCenter=data.current_piece_center||{x:0,y:0};
-    const newPieceId=currentGameState.piece_id;
-    if(typeof newPieceId!=="undefined" && newPieceId!==lastPieceId){
-      lastPieceId=newPieceId;
-      setTimeout(fetchCandidateMoves,200);
-    }
-  }
-}
-function doResetGame(){
-  resetGameLogic();
-  currentGameState=null;
-  currentPieceCenter={x:0,y:0};
-  candidateMoves=[];
-  topCandidates=[];
-  appliedArrows=[];
-  particles=[];
-  simulationPaused=false;
-  lastPieceId=null;
-  candidateListEl.innerHTML="";
-  fetchCandidateMoves();
-}
-function updateCandidateListUI(){
+function updateCandidateListUI() {
   candidateListEl.innerHTML = "";
-  topCandidates.forEach((c,i)=>{
-    let div = document.createElement("div");
+
+  // topCandidates is already sorted by prob descending
+  topCandidates.forEach((c, i) => {
+    const div = document.createElement("div");
     div.className = "candidate";
-    div.style.borderLeft = `10px solid ${c.color}`;
-    // Instead of c.flow, we show c.flowDisplay
+    div.style.borderLeft = `10px solid ${c.color}`;  // 0→green,1→yellow,2→red
     div.innerHTML = `
       <h3>${c.action_key}</h3>
-      <p>Flow: ${c.flowDisplay || 0}</p>
-      <p>Prob: ${( (c.probability||0)*100).toFixed(1)}%</p>
+      <p>Flow: ${c.flowDisplay}</p>
+      <p>Prob: ${c.probDisplay}</p>
     `;
-    div.onclick = ()=> doSelectCandidate(c.action_key);
+    div.onclick = () => doSelectCandidate(c.action_key);
     candidateListEl.appendChild(div);
   });
 }
 
 
-// ====================== INIT FUNCTION ======================
-function init(){
-  console.log("[init] Starting front-end Tetris GFlowNet...");
-  canvas=document.getElementById("tetrisCanvas");
-  ctx=canvas.getContext("2d");
-  candidateListEl=document.getElementById("candidateList");
-  resetBtn=document.getElementById("resetBtn");
-
-  // Create Tetris + Agent
-  game=new TetrisGame();
-  agent=new TrajectoryBalanceAgent(0.02); // old approach, not used if NN loaded
-  nnModel= new NeuralFlowNet();          // new approach
-
-  // Attempt to load from pretrained_flows_nn.json
-  console.log("[init] Attempting to fetch pretrained_flows_nn.json...");
-  fetch("pretrained_flows_nn.json")
-    .then(resp=>{
-      if(!resp.ok){
-        throw new Error(`Could not fetch JSON: ${resp.status} ${resp.statusText}`);
-      }
-      return resp.json();
-    })
-    .then(jsonData=>{
-      console.log("[init] Successfully loaded pretrained_flows_nn.json!");
-      nnModel.loadJson(jsonData);
-    })
-    .catch(err=>{
-      console.warn("[init] Could NOT load pretrained_flows_nn.json, continuing with fallback agent:", err);
-    })
-    .finally(()=>{
-      // Start game loop
-      console.log("[init] Starting game loop now...");
-      setInterval(tickGame, TICK_INTERVAL);
-      fetchCandidateMoves();
-      resetBtn.addEventListener("click", doResetGame);
-      requestAnimationFrame(animate);
+    // ====================== INIT & JSON LOADER ======================
+    document.addEventListener('DOMContentLoaded', () => {
+      canvas          = document.getElementById('tetrisCanvas');
+      ctx             = canvas.getContext('2d');
+      candidateListEl = document.getElementById('candidateList');
+      resetBtn        = document.getElementById('resetBtn');
+      game    = new TetrisGame();
+      agent   = new TrajectoryBalanceAgent();
+      nnModel = new NeuralFlowNet();
+      // only load pretrained_flows_tb.json now:
+      fetch('pretrained_flows_tb.json')
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to load pretrained_flows_tb.json');
+          return res.json();
+        })
+        .then(tbJson => {
+          agent.loadFromJSON(tbJson);
+          console.log('[Frontend] TB weights loaded, logZ=', tbJson.logZ);
+        })
+        .catch(err => {
+          console.warn('[Frontend] Could not load TB weights:', err);
+        })
+        .finally(() => {
+          setInterval(tickGame, TICK_INTERVAL);
+          fetchCandidateMoves();
+          resetBtn.addEventListener('click', doResetGame);
+          requestAnimationFrame(animate);
+        });
     });
-}
 
-// ====================== DOMContentLoaded ======================
-document.addEventListener("DOMContentLoaded", init);
-</script>
+  
+  </script>
+  
 
-<!-- 
-   (Line 1670) Final JavaScript for Nav Menu and Sticky Arrow
-   (If you don't need this part, remove it or keep it)
--->
-<script>
-function toggleNavMenu() {
-  const nav = document.getElementById('mainNav');
-  nav.classList.toggle('show');
-}
-function scrollDown() {
-  window.scrollBy({
-    top: window.innerHeight,
-    left: 0,
-    behavior: 'smooth'
-  });
-}
-
-/* Intersection observer to highlight sections */
-document.addEventListener("DOMContentLoaded", () => {
-  const sections = document.querySelectorAll("main section");
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("active");
-      } else {
-        entry.target.classList.remove("active");
-      }
+  <script>
+  function toggleNavMenu() {
+    const nav = document.getElementById('mainNav');
+    nav.classList.toggle('show');
+  }
+  function scrollDown() {
+    window.scrollBy({
+      top: window.innerHeight,
+      left: 0,
+      behavior: 'smooth'
     });
-  }, { threshold: 0.3 });
-  sections.forEach(section => observer.observe(section));
-});
-</script>
-
-<!-- 
-   (Line 1699) Particle JS config
-   We'll set up the background so it looks dynamic. 
--->
-<script>
-particlesJS("particles-js", {
-  particles: {
-    number: { value: 60, density: { enable: true, value_area: 800 } },
-    color: { value: "#00bfff" },
-    shape: {
-      type: "circle",
-      stroke: { width: 0, color: "#000" },
-      polygon: { nb_sides: 5 }
-    },
-    opacity: { value: 0.5, random: true },
-    size: { value: 3, random: true },
-    line_linked: {
-      enable: true,
-      distance: 150,
-      color: "#00bfff",
-      opacity: 0.4,
-      width: 1
-    },
-    move: {
-      enable: true,
-      speed: 2,
-      direction: "none",
-      random: false,
-      straight: false,
-      out_mode: "out"
-    }
-  },
-  interactivity: {
-    detect_on: "canvas",
-    events: {
-      onhover: { enable: false },
-      onclick: { enable: false }
-    }
-  },
-  retina_detect: true
-});
-</script>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    if(typeof renderMathInElement==="function"){
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false},
-        ]
+  }
+  
+  /* Intersection observer to highlight sections */
+  document.addEventListener("DOMContentLoaded", () => {
+    const sections = document.querySelectorAll("main section");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+        } else {
+          entry.target.classList.remove("active");
+        }
       });
-    }
+    }, { threshold: 0.3 });
+    sections.forEach(section => observer.observe(section));
   });
-</script>
+  </script>
+  
+  <!-- 
+     (Line 1699) Particle JS config
+     We'll set up the background so it looks dynamic. 
+  -->
+  <script>
+  particlesJS("particles-js", {
+    particles: {
+      number: { value: 60, density: { enable: true, value_area: 800 } },
+      color: { value: "#00bfff" },
+      shape: {
+        type: "circle",
+        stroke: { width: 0, color: "#000" },
+        polygon: { nb_sides: 5 }
+      },
+      opacity: { value: 0.5, random: true },
+      size: { value: 3, random: true },
+      line_linked: {
+        enable: true,
+        distance: 150,
+        color: "#00bfff",
+        opacity: 0.4,
+        width: 1
+      },
+      move: {
+        enable: true,
+        speed: 2,
+        direction: "none",
+        random: false,
+        straight: false,
+        out_mode: "out"
+      }
+    },
+    interactivity: {
+      detect_on: "canvas",
+      events: {
+        onhover: { enable: false },
+        onclick: { enable: false }
+      }
+    },
+    retina_detect: true
+  });
+  </script>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if(typeof renderMathInElement==="function"){
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+          ]
+        });
+      }
+    });
+  </script>
+  
+  

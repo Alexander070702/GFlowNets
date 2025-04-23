@@ -321,34 +321,45 @@ class NNReplayGFlowNet:
         self.eps= eps_greedy
 
     def sample_action(self, board, piece, cands):
-        """Epsilon-greedy to avoid early collapse, then softmax over logFlows."""
+        """Epsilon‑greedy + softmax sampling from a 1‑D flow vector."""
         if not cands:
             return None
-        if random.random()< self.eps:
+        if random.random() < self.eps:
             return random.choice(cands)
+
         with torch.no_grad():
-            sEnc= encode_state(board, piece)
-            batch=[]
-            for (aK,_,_) in cands:
-                aEnc= encode_action(aK)
-                full= torch.cat([sEnc,aEnc])
-                batch.append(full)
-            bigT= torch.stack(batch)
-            raw= self.model(bigT)
-            raw= torch.clamp(raw, -20,20)
-            mx= raw.max()
-            exps= torch.exp(raw- mx)
-            sumE= exps.sum()
-            probs= exps/sumE
-            r= random.random()
-            cum=0
-            idx=0
-            for i,pv in enumerate(probs):
-                cum+= pv.item()
-                if r<= cum:
-                    idx=i
-                    break
+            # --- Encode state once ---
+            b = torch.tensor(board, dtype=torch.float32) \
+                    .view(1,1,BOARD_ROWS,BOARD_COLS)
+            sb = self.encoder(b).squeeze(0)                 # (feat,)
+            pi = self.piece_emb(torch.tensor([PIECE_IDS[piece["type"]]]))\
+                     .squeeze(0)                              # (16,)
+            s_emb = torch.cat([sb, pi], dim=-1)             # (feat+16,)
+
+            # --- Build batches of size n_cands ---
+            a_batch = torch.stack([encode_action(aK) for aK,_ in cands])  # (n,2)
+            s_batch = s_emb.unsqueeze(0).repeat(len(cands), 1)            # (n,feat+16)
+
+            # --- Forward through dueling net ---
+            raw = self.flow_net(s_batch, a_batch)       # shape: (n,1)
+            raw = raw.view(-1)                          # now (n,)
+            raw = torch.clamp(raw, -20, 20)
+
+            # --- Softmax with temperature ---
+            exps = torch.exp((raw - raw.max()) / self.temperature)  # (n,)
+            probs = exps / exps.sum()                               # (n,)
+
+            # !!! DEBUG: print shapes !!!
+            print(f"raw.shape={tuple(raw.shape)}, probs.shape={tuple(probs.shape)}")
+
+            # --- Sample one index from this 1‑D distribution ---
+            idx_tensor = torch.multinomial(probs, 1)  # shape: (1,)
+            idx = idx_tensor.item()                  # scalar now safe
+
         return cands[idx]
+
+
+
 
     def store_trajectory(self, steps, final_r):
         self.replay.append( (steps, final_r) )
