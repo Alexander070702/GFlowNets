@@ -460,6 +460,29 @@ main {
 footer {
   flex-shrink: 0;
 }
+
+/* Completely hide the built-in details/summary triangle */
+details > summary {
+  list-style: none !important;         /* Firefox fallback */
+}
+details > summary::-webkit-details-marker {
+  display: none !important;            /* WebKit */
+}
+details > summary::marker {
+  content: none !important;            /* Modern browsers */
+  display: none !important;
+}
+
+/* Then inject only your custom arrows */
+details > summary::before {
+  content: '► ' !important;
+  color: #ffcc00 !important;
+}
+details[open] > summary::before {
+  content: '▼ ' !important;
+  color: #ffcc00 !important;
+}
+
   </style>
 
 </head>
@@ -587,7 +610,7 @@ footer {
   
       <p>
         In the panel on the right, you will see the current top moves. 
-        The GFlowNet automatically picks the best one (highlighted in green), 
+        The GFlowNet automatically picks the first move of the list (green move), 
         but you are free to override it by clicking on any other move 
         to see how that might affect the game.
       </p>
@@ -608,6 +631,39 @@ footer {
         </div>
       </div>
     </section>
+
+    <details>
+      <summary>Implementation Details</summary>
+      <p>
+        The Tetris demonstration employs a pretrained neural GFlowNet policy. Within the <code>TetrisGame</code> environment, the agent receives partial line-clearing rewards (e.g., +300 for one line up to +3000 for four lines) supplemented by a fixed survival bonus. To promote structurally coherent play, the agent is penalized in proportion to the count of board holes, the maximum column height and board bumpiness following each piece placement.
+      </p>
+      <p>
+        During training, each state–action pair is encoded into a 212-dimensional feature vector and passed through a multilayer perceptron with 512-unit hidden layers to predict unnormalized log-flow values. Trajectories are stored in a replay buffer and model parameters as well as the log-partition function <code>logZ</code> are jointly optimized using the trajectory-balance loss.
+      </p>
+      <p>
+        Upon completion of training, the resulting model weights and <code>logZ</code> are serialized into JSON for use in the front-end. The JavaScript client loads this data to instantiate a <code>NeuralFlowNet</code>, which computes log-flow values for all terminal moves, applies a softmax to yield sampling probabilities and renders the top candidate moves within the Tetris interface.
+      </p>
+    </details>
+    <details>
+      <summary>Heuristic and State-Space Reduction</summary>
+      <p>
+        To mitigate the combinatorial explosion of terminal moves, the front end applies a <em>beam-blend heuristic</em>. For each candidate terminal move, two independent metrics are computed:
+      </p>
+      <ol>
+          <strong>Flow score</strong>: The normalized log-flow output from the GFlowNet, reflecting the learned policy’s preference for the move.
+
+
+          <strong>One-step lookahead score</strong>: A depth-2 beam search estimate obtained by simulating the candidate move, sampling a single subsequent piece and selecting the highest-scoring terminal placement according to the same evaluation criteria. This provides an approximate measure of immediate downstream potential.
+
+      </ol>
+      <p>
+        Both metrics are min–max normalized to the [0,1] interval and combined via a linear mixture: <code>score = α·flow + (1−α)·beam</code>, with α empirically set to 0.7. This hybridization preserves diversity from the GFlowNet while injecting a targeted lookahead bias, effectively reducing the search space.
+      </p>
+      <p>
+        Finally, moves are categorized by line clears, net hole reduction and clean-flat outcomes. A shortlist of the top three moves is selected from the highest-scoring category and presented to the user, balancing exploration through GFlowNet sampling and exploitation via heuristic prioritization.
+      </p>
+    </details>    
+      
   
     <div class="references">
       <h3>Further Reading – Tetris GFlowNet Demo</h3>
@@ -758,17 +814,19 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
     </script>
 
     <details>
-      <summary>Interpreting the DAG</summary>
+      <summary>Interpreting the Diagram</summary>
       <p>
-        Each row or level in this visualization shows more advanced forms of the 
-        partial molecule. Nodes represent the current state of the molecule, 
-        and edges represent choices you can make at that step (such as adding a 
-        chemical group). Multiple paths can merge into the same node if there are 
-        different ways to reach the same structure. The terminal state is the reward on 
-        how good the molecules properties are based on the reward function. In this DAG the three terminal states on top are the candidate solutions, 
-        whereas the bottom three terminal states are solutions that the GFlowNet assigns less reward. 
+        The flow starts from a single origin and immediately fans out into three main pathways—each representing a broad molecular backbone. The width of each path shows how much of the total 100% “probability mass” goes that way (roughly 55%, 37%, and 8%).
+      </p>
+      <p>
+        Each of those three backbones then splits again into three more specific molecule designs. Along each branch you’ll see labeled flows (e.g. 28, 14, 13, etc.), which translate directly into sampling frequencies: “28” means that particular candidate will appear about 28% of the time across many draws.
+      </p>
+      <p>
+ This two-stage layout makes it easy to see which general structures the model prefers, while still keeping lower-probability options in view.
       </p>
     </details>
+    
+    
 
     <details>
       <summary>Why This Matters in Drug Discovery</summary>
@@ -804,7 +862,7 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
       <summary>BONUS: Pretraining GFlowNets for Fast Inference</summary>
       <p>
         One of the key benefits of GFlowNets is that they can be pretrained. 
-        You spend the computation time upfront, and once the network has learned, 
+        You spend the computation time upfront and once the network has learned, 
         it can produce diverse, high-quality candidates almost instantly. This 
         speeds up tasks like generating large batches of promising molecules 
         during the exploration phase of drug development.
@@ -835,8 +893,17 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
           </a>
           (arXiv 2022)
         </li>
+        <li>
+          <strong>[3]</strong>
+          Leguy, J., Cauchy, T., Glavatskikh, M., Duval, B., &amp; Da Mota, B. 
+          <a href="https://jcheminf.biomedcentral.com/articles/10.1186/s13321-020-00458-z" target="_blank">
+            <em>EvoMol: a flexible and interpretable evolutionary algorithm for unbiased de novo molecular generation</em>
+          </a>
+          <em>Journal of Cheminformatics</em> 12, 58 (2020). Open Access. :contentReference[oaicite:0]{index=0}
+        </li>
       </ul>
     </div>
+    
 
   </div>
 </section>
@@ -1869,7 +1936,7 @@ function aggregateHeight(board) {
 
 /**
  * Simulate dropping `piece` onto the current `game.board`,
- * clear lines, and return the resulting board + number of lines.
+ * clear lines and return the resulting board + number of lines.
  */
  function simulatePlacementOnBoard(board, piece) {
   const b = deepCopy(board);
