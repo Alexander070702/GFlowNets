@@ -9,14 +9,14 @@ This repository provides an interactive demonstration of Generative Flow Network
   - Sections on advanced mathematics and further reading
 - **Pretraining scripts** (`tetris_agent.py`) to train a Tetris GFlowNet using a neural network policy
 - **Static assets**:
-  - **`static/`**: JavaScript files powering comparison charts, flow conservation demos, and molecule DAG rendering
+  - **`static/`**: JavaScript files powering comparison charts, flow conservation demos and molecule DAG rendering
   - **`molecules/`**: Images used in the molecule flow visualization
 
 ---
 
 ## Features
 
-- **GFlowNet Overview**: Clear, interactive explanation of GFlowNets, comparison to traditional RL, and theoretical underpinnings
+- **GFlowNet Overview**: Clear, interactive explanation of GFlowNets, comparison to traditional RL and theoretical underpinnings
 - **Tetris Demo**: Real-time Tetris game where a GFlowNet samples and balances multiple candidate moves
 - **Flow Visualizations**: Animated DAGs illustrating flow conservation and distribution across solutions
 - **Advanced Math**: Expandable sections with formal definitions (Flow Matching, Trajectory Balance, Detailed Balance)
