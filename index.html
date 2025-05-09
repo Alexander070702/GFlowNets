@@ -573,24 +573,15 @@ details[open] > summary::before {
   -->
   <section id="tetris-demo">
     <div class="section-content">
-      <h2>2. Tetris GFlowNet Demo</h2>
+      <h2>2. Tetris GFlowNet Demonstration</h2>
       <p>
-        Here, you can watch a <strong>GFlowNet</strong> in action, guiding an 
-        interactive Tetris game. At each step, the system identifies multiple 
-        promising moves—each assigned a <em>“flow”</em> value indicating how strongly 
-        the GFlowNet favors it. Notably, it does not just stick to the 
-        single most probable move, but it occasionally samples less-likely options, 
-        ensuring exploration. Over time, it balances trying new strategies with 
-        maximizing the reward (in this case, staying alive in Tetris for as long as possible). 
-        This way the GFlowNet aims to match the real distribution of each move. 
+        In this demonstration, a pretrained GFlowNet governs an interactive game of Tetris. At each decision point, the model assigns to each feasible move a flow value reflecting the strength of its learned preference. Being pretrained, move selection is predominantly exploitative, with only minimal stochastic sampling of lower‐flow alternatives. By embedding the objective of maximizing play duration within the flow distribution, the GFlowNet’s choices approximate a high-reward move distribution.
       </p>
-  
       <p>
-        In the panel on the right, you will see the current top moves. 
-        The GFlowNet automatically picks the first move of the list (green move), 
-        but you are free to override it by clicking on any other move 
-        to see how that might affect the game.
+        The panel on the right enumerates the current top-ranked candidate moves for the given board configuration. By default, the network executes green action. However, you may override this by clicking any other move to observe its impact on subsequent gameplay.
       </p>
+      
+      
     </div>
   
     <!-- Actual Tetris Canvas & Moves -->
