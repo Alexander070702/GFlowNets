@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Statischer Tetris-DAG – Korrekt</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #222;
+      color: #eee;
+      font-family: sans-serif;
+    }
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+    }
+    svg {
+      border: 1px solid #444;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <!-- Unser SVG-Canvas -->
+    <svg id="flowConservationSVG"></svg>
+  </div>
+
+  <!-- D3-Bibliothek (v7) -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- Unser Demo-Skript -->
+  <script src="flowConservationDemo.js"></script>
+  <script>
+    // Sobald DOM und D3 geladen sind, rufe unsere Init-Funktion auf:
+    document.addEventListener('DOMContentLoaded', () => {
+      initFlowConservationDemo();
+    });
+  </script>
+</body>
+</html>

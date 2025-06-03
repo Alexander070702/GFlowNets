@@ -1175,6 +1175,12 @@ function init() {
   candidateListEl = document.getElementById("candidateList");
   resetBtn = document.getElementById("resetBtn");
 
+    // ─── Paint the Viridis rectangle onto the new background canvas ───
+  const bgCanvas = document.getElementById("tetrisBgCanvas");
+  const bgCtx = bgCanvas.getContext("2d");
+  bgCtx.fillStyle = "#39568C"; // Viridis mid‐tone
+  bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
   // Create game & agent
   game = new TetrisGame();
   agent = new TrajectoryBalanceAgent(0.02);

@@ -19,13 +19,16 @@
 
 
 <style>
-  nav {
+/* ========================== */
+/*      Sidebar Navigation    */
+/* ========================== */
+nav {
   position: fixed;
   top: 0;
   left: 0;
   width: 250px;
   height: 100vh;
-  background: rgba(0,0,0,0.9);
+  background: rgba(255, 255, 255, 0.95);
   transform: translateX(-270px);
   transition: transform 0.3s ease;
   padding: 60px 20px;
@@ -37,39 +40,49 @@ nav.show {
 }
 .nav-menu {
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 .nav-menu li {
   margin-bottom: 15px;
 }
 .nav-menu a {
-  color: #eee;
+  color: #33638D;
   text-decoration: none;
   font-weight: 600;
   font-size: 1rem;
 }
 .nav-menu a:hover {
+  color: #35B778;
   text-decoration: underline;
 }
-  details > summary + p + ul {
-  margin-left: 2em;  /* or whatever spacing you prefer */
-}
 
-/* Optional: Some extra styling for math blocks */
+/* ========================== */
+/*  Details/Summary & Math    */
+/* ========================== */
+details > summary + p + ul {
+  margin-left: 2em;
+}
 .katex-display {
-margin: 1em 0;
-text-align: center;
+  margin: 1em 0;
+  text-align: center;
 }
 code {
-background-color: #f3f3f3;
-padding: 2px 4px;
-border-radius: 4px;
-font-size: 90%;
+  background-color: #f3f3f3;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 90%;
+  color: #111111;
 }
 details > summary {
-cursor: pointer;
-font-weight: bold;
+  cursor: pointer;
+  font-weight: bold;
+  color: #440154;
 }
 
+/* ========================== */
+/*        Global Reset        */
+/* ========================== */
 * {
   margin: 0;
   padding: 0;
@@ -78,90 +91,109 @@ font-weight: bold;
 html, body {
   width: 100%;
   height: 100%;
-  background: #111;
-  color: #eee;
+  background: #ffffff;
+  color: #222222;
   font-family: "Helvetica Neue", Arial, sans-serif;
   line-height: 1.6;
   overflow-x: hidden;
 }
-/* (Line 20) Headings & Text */
+
+/* ========================== */
+/*   Headings & Text Styling  */
+/* ========================== */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   margin-bottom: 10px;
-  color: #00bfff;
+  color: #21918C;
 }
 h1 {
   font-size: 2rem;
   margin-top: 80px;
   text-align: center;
-  color: #00bfff;
+  color: #21918C;
 }
 h2 {
   margin-top: 40px;
-  color: #fefefe;
+  color: #444444;
 }
 p, li {
   margin-bottom: 10px;
 }
 a {
-  color: #00bfff;
+  color: #33638D;
   text-decoration: none;
 }
 a:hover {
+  color: #35B778;
   text-decoration: underline;
 }
 em {
   font-style: italic;
 }
-code {
-  background: rgba(255,255,255,0.07);
-  padding: 3px 5px;
-  border-radius: 4px;
-  font-family: "Courier New", monospace;
-}
+
+/* ========================== */
+/*      Preformatted Blocks   */
+/* ========================== */
 pre {
-  background: rgba(255,255,255,0.1);
+  background: rgba(0, 0, 0, 0.03);
   padding: 10px;
   border-radius: 6px;
   overflow-x: auto;
   margin: 15px 0;
 }
-/* (Line 50) Layout: main container */
+pre code {
+  background: transparent;
+  color: #222222;
+  padding: 0;
+  border-radius: 0;
+  font-family: "Courier New", monospace;
+}
+
+/* ========================== */
+/*      Main Container        */
+/* ========================== */
 main {
   max-width: 1200px;
   margin: 0 auto;
   padding: 60px 20px;
   position: relative;
-  z-index: 1; /* Over the particle background */
+  z-index: 1;
 }
-/* (Line 60) Sections styling */
+
+/* ========================== */
+/*      Section Styling       */
+/* ========================== */
 section {
   margin-bottom: 100px;
-  background: rgba(255,255,255,0.02);
+  background: #ffffff;
   border-radius: 6px;
   padding: 20px;
   transition: all 0.4s ease;
 }
 section.active {
-  background: rgba(255,255,255,0.06);
+  background: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 .section-content {
   margin: 0 10px;
 }
 
-/* (Line 75) Particle Background Container */
+/* ========================== */
+/*   Particle Background      */
+/* ========================== */
 #particles-js {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: -10; /* behind everything */
+  z-index: -10;
 }
 
-/* (Line 80) Header & Burger Menu */
+/* ========================== */
+/*   Header & Burger Menu     */
+/* ========================== */
 header {
   position: fixed;
   top: 10px;
@@ -179,18 +211,20 @@ header {
 .burger span {
   display: block;
   height: 4px;
-  background: #fff;
+  background: #444444;
   border-radius: 2px;
 }
 
-/* (Line 100) Navigation (sidebar) */
+/* ========================== */
+/*  Navigation (Sidebar)      */
+/* ========================== */
 nav {
   position: fixed;
   top: 0;
   left: 0;
   width: 250px;
   height: 100vh;
-  background: rgba(0,0,0,0.9);
+  background: rgba(255, 255, 255, 0.95);
   transform: translateX(-270px);
   transition: transform 0.3s ease;
   padding: 60px 20px;
@@ -207,26 +241,29 @@ nav.show {
   margin-bottom: 15px;
 }
 .nav-menu a {
-  color: #eee;
+  color: #33638D;
   text-decoration: none;
   font-weight: 600;
   font-size: 1rem;
 }
 .nav-menu a:hover {
+  color: #35B778;
   text-decoration: underline;
 }
 
-/* (Line 125) The big page title H1 in the center */
+/* ========================== */
+/*    Page Title (Centered)   */
+/* ========================== */
 h1 {
   margin-top: 120px;
-  color: #00bfff;
+  color: #21918C;
   text-align: center;
   font-size: 2.4rem;
 }
 
-
-
-/* (Line 145) Tetris container */
+/* ========================== */
+/*    Tetris Container Layout */
+/* ========================== */
 #tetris-game .container {
   display: flex;
   flex-wrap: wrap;
@@ -241,22 +278,28 @@ h1 {
   flex: 0 0 auto;
   min-width: 200px;
   max-width: 280px;
-  background: rgba(0,0,0,0.3);
+  background: white;
   padding: 15px;
   border-radius: 6px;
 }
 #tetrisCanvas {
-  background: #222;
-  border: 2px solid #444;
+  background: #ffffff;
+  border: 2px solid #33638D;
   display: block;
 }
+#tetris-game {
+  background: #33638D;
+  padding: 20px;
+}
 
-/* (Line 165) Candidate moves list */
+/* ========================== */
+/*    Candidate Moves List    */
+/* ========================== */
 #candidateList {
   margin-top: 10px;
 }
 .candidate {
-  background: rgba(255,255,255,0.08);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 5px;
   padding: 8px;
   margin: 6px 0;
@@ -264,25 +307,27 @@ h1 {
   transition: background 0.2s;
 }
 .candidate:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(0, 0, 0, 0.1);
 }
 .controls button {
   margin-top: 10px;
   padding: 10px 16px;
-  background: #00bfff;
+  background: #35B778;
   border: none;
   border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
-  color: #111;
+  color: #ffffff;
 }
 .controls button:hover {
-  opacity: 0.85;
+  background: #6DCD59;
 }
 
-/* (Line 185) Collapsible details */
+/* ========================== */
+/*     Collapsible Details    */
+/* ========================== */
 details {
-  background: rgba(255,255,255,0.07);
+  background: rgba(0, 0, 0, 0.05);
   padding: 10px;
   border-radius: 5px;
   margin: 20px 0;
@@ -291,28 +336,32 @@ details summary {
   cursor: pointer;
   font-size: 1.05rem;
   font-weight: 600;
+  color: #440154;
 }
 details summary::-webkit-details-marker {
   display: none;
 }
 details summary:before {
   content: '► ';
-  color: #ffcc00;
+  color: #B8DE29;
 }
 details[open] summary:before {
   content: '▼ ';
-  color: #ffcc00;
+  color: #B8DE29;
 }
 
-/* (Line 200) Reference lists */
+/* ========================== */
+/*    Reference Lists Style   */
+/* ========================== */
 .references {
   margin-top: 25px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(0, 0, 0, 0.03);
   padding: 10px;
   border-radius: 5px;
 }
 .references h3 {
   margin-bottom: 10px;
+  color: #33638D;
 }
 .references ul, .references ol {
   margin-left: 20px;
@@ -320,102 +369,76 @@ details[open] summary:before {
 .references li {
   margin-bottom: 5px;
   line-height: 1.4;
+  color: #222222;
 }
 
+/* ========================== */
+/*   Comparison/Chart Layout  */
+/* ========================== */
 #comparisonChart {
   display: flex;
-  justify-content: center;   /* center them horizontally */
-  gap: 20px;                 /* some spacing between the two mini DAGs */
+  justify-content: center;
+  gap: 8px;                 /* shrink gap from 20px → 8px */
+  flex-wrap: wrap;          /* allow wrapping on very narrow screens */
 }
 
+/* Ensure each child SVG can grow but never overflow */
+#comparisonChart > svg {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}
 
-/* (Line 230) Footer */
+/* ========================== */
+/*      Footer Styling        */
+/* ========================== */
 footer {
   text-align: center;
   padding: 20px 0;
   margin-top: 40px;
-  background: rgba(255,255,255,0.02);
-  border-top: 1px solid #444;
+  background: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid #CCCCCC;
 }
 
+/* ========================== */
+/*   Dark-Mode/KaTeX Overrides */
+/* ========================== */
+html, body {
+  background: #ffffff;
+  color: #222222;
+}
+.katex, .katex-html, .katex-display {
+  color: inherit !important;
+}
+.katex-display {
+  margin: 1em auto;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  max-width: 95%;
+}
+.katex .frac-line,
+.katex .sqrt-line {
+  border-color: #444444 !important;
+}
+.katex-html .tag {
+  background: #f3f3f3 !important;
+  color: #33638D !important;
+  border-radius: 4px;
+  padding: 0 4px;
+}
 
-
-    /* Your existing dark-mode styles truncated for brevity... */
-    html, body {
-      background: #111;
-      color: #eee;
-      /* etc... */
-    }
-
-    /*
-      Force KaTeX text to inherit the same color you use for
-      the rest of the page. Otherwise KaTeX may default to black.
-    */
-    .katex, .katex-html, .katex-display {
-      color: inherit !important;
-    }
-
-    /* Make display equations more readable against dark background */
-    .katex-display {
-      margin: 1em auto;
-      text-align: center;
-      font-size: 1.1rem; /* adjust if you want bigger/smaller math */
-      line-height: 1.4;
-    }
-
-        /* =============== KaTeX Styling for Dark Mode =============== */
-    /* Let KaTeX inherit the page's light text color */
-    .katex, .katex-display, .katex-html {
-      color: #f0f0f0 !important;
-      /* 
-         If you still see black text, your browser may be caching KaTeX font files 
-         or there's another conflicting style. A hard refresh or clearing cache helps.
-      */
-    }
-
-    /* Make inline math slightly larger than default */
-    .katex {
-      font-size: 1.06rem; 
-      line-height: 1.5;
-    }
-
-    /* For display math (the $$ ... $$ kind): bigger, with a subtle background box */
-    .katex-display {
-      font-size: 1.15rem;
-      line-height: 1.45;
-      margin: 1.4em auto; 
-      padding: 0.8em 1em;
-      background: rgba(255,255,255,0.07);
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.5);
-      text-align: left; /* or center, if you prefer */
-      max-width: 95%;
-    }
-
-    /*
-       Improve fraction lines, roots, etc. on dark backgrounds
-       KaTeX sets them as border-color, so let's override them
-    */
-    .katex .frac-line, 
-    .katex .sqrt-line {
-      border-color: #bbb !important;
-    }
-
-    /*
-       Tweak the color for things like \tag, equation numbers, etc.
-    */
-    .katex-html .tag {
-      background: #222 !important; 
-      color: #ffcc00 !important; 
-      border-radius: 4px;
-      padding: 0 4px;
-    }
-
-    header {
+/* ========================== */
+/*    Header & Burger Updates */
+/* ========================== */
+header {
   position: fixed;
   top: 10px;
   left: 10px;
-  z-index: 99999; /* Higher than the nav */
+  z-index: 99999;
 }
 .burger {
   width: 30px;
@@ -424,9 +447,11 @@ footer {
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
-  /* optionally a background or small padding to ensure it's visible */
 }
 
+/* ========================== */
+/*      Layout Adjustments    */
+/* ========================== */
 body {
   display: flex;
   flex-direction: column;
@@ -434,38 +459,261 @@ body {
   margin: 0;
   padding: 0;
 }
-
 main {
   flex: 1;
 }
-
 footer {
   flex-shrink: 0;
 }
 
-/* Completely hide the built-in details/summary triangle */
+/* Hide default summary markers across browsers */
 details > summary {
-  list-style: none !important;         /* Firefox fallback */
+  list-style: none !important;
 }
 details > summary::-webkit-details-marker {
-  display: none !important;            /* WebKit */
+  display: none !important;
 }
 details > summary::marker {
-  content: none !important;            /* Modern browsers */
+  content: none !important;
   display: none !important;
 }
 
-/* Then inject only your custom arrows */
+/* Inject custom arrows for summary */
 details > summary::before {
   content: '► ' !important;
-  color: #ffcc00 !important;
+  color: #B8DE29 !important;
 }
 details[open] > summary::before {
   content: '▼ ' !important;
-  color: #ffcc00 !important;
+  color: #B8DE29 !important;
 }
 
-  </style>
+/* ========================== */
+/*   Center the SVG elements  */
+/* ========================== */
+#flowConservationContainer {
+  text-align: center;
+}
+#flowConservationSVG {
+  display: block;
+  margin: 0 auto;
+}
+#moleculeFlowContainer {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  text-align: center;
+}
+#moleculeFlowSVG {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ========================== */
+/*  Force SVGs/Canvases/Imgs  */
+/*      to Never Overflow     */
+/* ========================== */
+/* Override inline width/height attributes */
+svg,
+canvas,
+img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+/* ========================== */
+/*   Mobile Responsiveness    */
+/* ========================== */
+@media (max-width: 768px) {
+  /* Sidebar full-width overlay */
+  nav {
+    width: 100%;
+    transform: translateX(-100%);
+    padding: 60px 10px;
+  }
+  nav.show {
+    transform: translateX(0);
+  }
+  .nav-menu a {
+    font-size: 1.1rem;
+  }
+
+  /* Burger adjustments */
+  .burger {
+    width: 28px;
+    height: 20px;
+  }
+  .burger span {
+    height: 3px;
+  }
+
+  /* Title adjustments */
+  h1 {
+    font-size: 1.6rem;
+    margin-top: 100px;
+  }
+
+  /* Main padding */
+  main {
+    padding: 20px 10px;
+  }
+
+  /* Section padding */
+  section {
+    margin-bottom: 60px;
+    padding: 15px;
+  }
+  .section-content {
+    margin: 0 5px;
+  }
+
+  /* Heading sizes */
+  h2 {
+    font-size: 1.3rem;
+    margin-top: 30px;
+  }
+  h3, h4, h5, h6 {
+    font-size: 1.1rem;
+  }
+
+  /* Tetris layout stacks */
+  #tetris-game .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  #tetris-game .board,
+  #tetris-game .sidebar {
+    width: 100%;
+    max-width: none;
+  }
+  #tetris-game .board {
+    height: auto;
+  }
+  #tetrisCanvas,
+  #tetrisBgCanvas {
+    width: 100%;
+    height: auto;
+    max-width: 300px;
+  }
+  .sidebar {
+    margin-top: 10px;
+    padding: 10px;
+  }
+
+  /* Candidate list adjustments */
+  .candidate {
+    padding: 6px;
+    margin: 4px 0;
+  }
+  .candidate h3 {
+    font-size: 1rem;
+  }
+  .candidate p {
+    font-size: 0.9rem;
+  }
+  .controls button {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+
+  /* Details full-width */
+  details {
+    padding: 8px;
+  }
+  details summary {
+    font-size: 1rem;
+  }
+
+  /* Comparison chart and molecule flow */
+  #comparisonChart {
+    flex-direction: column;
+    gap: 0;
+  }
+  #comparisonChart > * {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 200px;
+  }
+  #moleculeFlowContainer {
+    width: 100%;
+    padding: 0;
+  }
+  #moleculeFlowSVG {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* KaTeX adjustments */
+  .katex-display {
+    font-size: 1rem;
+    margin: 0.5em 0;
+  }
+
+  /* Reference list adjustments */
+  .references {
+    margin-top: 20px;
+    padding: 8px;
+  }
+  .references h3 {
+    font-size: 1.1rem;
+  }
+  .references li {
+    font-size: 0.9rem;
+  }
+
+  /* Footer padding */
+  footer {
+    padding: 15px 5px;
+  }
+}
+
+/* ========================== */
+/*   Very Small Screens (<480px)  */
+/* ========================== */
+@media (max-width: 480px) {
+  /* Further text shrink */
+  h1 {
+    font-size: 1.4rem;
+    margin-top: 80px;
+  }
+  h2 {
+    font-size: 1.2rem;
+  }
+  p, li, .candidate p {
+    font-size: 0.85rem;
+  }
+  .nav-menu a {
+    font-size: 1rem;
+  }
+
+  /* Padding adjustments */
+  main {
+    padding: 15px 8px;
+  }
+  section {
+    padding: 12px;
+    margin-bottom: 50px;
+  }
+
+  /* Tetris canvas even smaller */
+  #tetrisCanvas,
+  #tetrisBgCanvas {
+    max-width: 260px;
+  }
+
+  /* Buttons adjustments */
+  .controls button {
+    padding: 6px;
+    font-size: 0.85rem;
+  }
+}
+</style>
+
+
 
 </head>
 <body>
@@ -584,21 +832,37 @@ details[open] > summary::before {
       
     </div>
   
-    <!-- Actual Tetris Canvas & Moves -->
-    <section id="tetris-game">
-      <div class="container">
-        <div class="board">
-          <canvas id="tetrisCanvas" width="300" height="600"></canvas>
-        </div>
-        <div class="sidebar">
-          <h2>Candidate Moves</h2>
-          <div id="candidateList"><!-- Populated by Tetris logic --></div>
-          <div class="controls">
-            <button id="resetBtn">Reset Game</button>
-          </div>
-        </div>
+<!-- Actual Tetris Canvas & Moves -->
+<section id="tetris-game">
+  <div class="container">
+    <div class="board" style="position: relative; width: 300px; height: 600px;">
+      <!-- 1) Background canvas (will be painted with Viridis) -->
+      <canvas
+        id="tetrisBgCanvas"
+        width="300"
+        height="600"
+        style="position: absolute; top: 0; left: 0; z-index: 0;"
+      ></canvas>
+
+      <!-- 2) The existing Tetris canvas on top -->
+      <canvas
+        id="tetrisCanvas"
+        width="300"
+        height="600"
+        style="position: absolute; top: 0; left: 0; z-index: 1;"
+      ></canvas>
+    </div>
+
+    <div class="sidebar">
+      <h2>Candidate Moves</h2>
+      <div id="candidateList"><!-- Populated by Tetris logic --></div>
+      <div class="controls">
+        <button id="resetBtn">Reset Game</button>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
+
 
     <details>
       <summary>Implementation Details</summary>
@@ -687,16 +951,16 @@ details[open] > summary::before {
         GFlowNets valuable for tasks that need multiple strong outcomes.
       </p>
       
-      <!-- Flow Conservation Demo -->
-      <div id="flowConservationContainer">
-        <svg id="flowConservationSVG"></svg>
-      </div>
-      <script src="/static/flow_conservation.js"></script>
-      <script>
-        document.addEventListener("DOMContentLoaded", function() {
-          initFlowConservationDemo();
-        });
-      </script>
+    <div id="flowConservationContainer">
+      <svg id="flowConservationSVG"></svg>
+    </div>
+    <script src="/static/flow_conservation.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        initFlowConservationDemo();
+      });
+    </script>
+
   
       <div class="references">
         <h3>Further Readings on GFlowNets</h3>
@@ -781,8 +1045,8 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
       });
     </script>
 
-    <details>
-      <summary>Interpreting the Diagram</summary>
+
+      <br>
       <p>
         The flow starts from a single origin and immediately fans out into three main pathways—each representing a broad molecular backbone. The width of each path shows how much of the total 100% “probability mass” goes that way (roughly 55%, 37%, and 8%).
       </p>
@@ -792,7 +1056,15 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
       <p>
  This two-stage layout makes it easy to see which general structures the model prefers, while still keeping lower-probability options in view.
       </p>
-    </details>
+            <!-- Insert the bar-chart image here -->
+      <div style="text-align: center; margin: 20px 0;">
+        <img
+          src="molecules/percentage.png"
+          alt="Terminal-molecule flow percentages"
+          style="max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 4px;"
+        />
+      </div>
+
     
     
 
