@@ -50,20 +50,20 @@ function initFlowConservationDemo() {
 
   // (D.1) ROOT board (layer 0)
   const rootBoard = [
-    [0,0,0,0,0,0,0,0,0,0], // 0
-    [0,0,0,0,0,0,0,0,0,0], // 1
-    [0,0,0,0,0,0,0,0,0,0], // 2
-    [0,0,0,0,0,0,0,0,0,0], // 3
+    [0,0,0,0,0,2,0,0,0,0], // 0
+    [0,0,0,0,0,2,0,0,0,0], // 1
+    [0,0,0,0,0,2,0,0,0,0], // 2
+    [0,0,0,0,0,2,0,0,0,0], // 3
     [0,0,0,0,0,0,0,0,0,0], // 4
     [0,0,0,0,0,0,0,0,0,0], // 5
     [0,0,0,0,0,0,0,0,0,0], // 6
     [0,0,0,0,0,0,0,0,0,0], // 7
     [0,0,0,0,0,0,0,0,0,0], // 8
     [0,0,0,0,0,0,0,0,0,0], // 9
-    [0,0,0,0,0,2,0,0,0,0], // 10 (vertical “I” preview, col 5)
-    [0,0,0,0,0,2,0,0,0,0], // 11
-    [0,0,0,0,0,2,0,0,0,0], // 12
-    [0,0,0,0,0,2,0,0,0,0], // 13
+    [0,0,0,0,0,0,0,0,0,0], // 10 (vertical “I” preview, col 5)
+    [0,0,0,0,0,0,0,0,0,0], // 11
+    [0,0,0,0,0,0, 0,0,0,0], // 12
+    [0,0,0,0,0,0,0,0,0,0], // 13
     [0,0,0,0,0,0,0,0,0,0], // 14 (leer)
     [0,0,0,0,0,0,0,0,0,0], // 15 (leer)
     [1,1,1,1,1,0,1,1,1,1], // 16 (well)
@@ -494,21 +494,29 @@ function initFlowConservationDemo() {
   nodeGroups.each(function(d) {
     const g = d3.select(this);
 
-    // 6.2.1) Draw the underlying “stack” (1 → blockColor, 0 → emptyColor)
-    for (let r = 0; r < CONFIG.boardRows; r++) {
-      for (let c = 0; c < CONFIG.boardCols; c++) {
-        const cellVal = d.board[r][c];
-        const color = (cellVal === 1) ? CONFIG.blockColor : CONFIG.emptyColor;
-        g.append('rect')
-          .attr('x', CONFIG.nodePadding + c * CONFIG.cellSize)
-          .attr('y', CONFIG.nodePadding + r * CONFIG.cellSize)
-          .attr('width',  CONFIG.cellSize)
-          .attr('height', CONFIG.cellSize)
-          .attr('fill',   color)
-          .attr('stroke', '#333')
-          .attr('stroke-width', 0.5);
-      }
+// (6.2.1) Draw the underlying “stack” (1 → blockColor, 2 → pieceColor, 0 → emptyColor)
+for (let r = 0; r < CONFIG.boardRows; r++) {
+  for (let c = 0; c < CONFIG.boardCols; c++) {
+    const cellVal = d.board[r][c];
+    let color;
+    if (cellVal === 1) {
+      color = CONFIG.blockColor;
+    } else if (cellVal === 2) {
+      color = CONFIG.pieceColor;
+    } else {
+      color = CONFIG.emptyColor;
     }
+    g.append('rect')
+      .attr('x', CONFIG.nodePadding + c * CONFIG.cellSize)
+      .attr('y', CONFIG.nodePadding + r * CONFIG.cellSize)
+      .attr('width',  CONFIG.cellSize)
+      .attr('height', CONFIG.cellSize)
+      .attr('fill',   color)
+      .attr('stroke', '#333')
+      .attr('stroke-width', 0.5);
+  }
+}
+
 
     // 6.2.2) If this is layer 1 (action‐node), draw spawnCells[] + arrow to landingCells[]
     if (d.layer === 1) {

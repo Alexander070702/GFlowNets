@@ -1,0 +1,693 @@
+
+/* ========================== */
+/*      Sidebar Navigation    */
+/* ========================== */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateX(-270px);
+  transition: transform 0.3s ease;
+  padding: 60px 20px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+nav.show {
+  transform: translateX(0);
+}
+.nav-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.nav-menu li {
+  margin-bottom: 15px;
+}
+.nav-menu a {
+  color: #33638D;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.nav-menu a:hover {
+  color: #35B778;
+  text-decoration: underline;
+}
+
+/* ========================== */
+/*  Details/Summary & Math    */
+/* ========================== */
+details > summary + p + ul {
+  margin-left: 2em;
+}
+.katex-display {
+  margin: 1em 0;
+  text-align: center;
+}
+code {
+  background-color: #f3f3f3;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 90%;
+  color: #111111;
+}
+details > summary {
+  cursor: pointer;
+  font-weight: bold;
+  color: #440154;
+}
+
+/* ========================== */
+/*        Global Reset        */
+/* ========================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  color: #222222;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ========================== */
+/*   Headings & Text Styling  */
+/* ========================== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #21918C;
+}
+h1 {
+  font-size: 2rem;
+  margin-top: 80px;
+  text-align: center;
+  color: #21918C;
+}
+h2 {
+  margin-top: 40px;
+  color: #444444;
+}
+p, li {
+  margin-bottom: 10px;
+}
+a {
+  color: #33638D;
+  text-decoration: none;
+}
+a:hover {
+  color: #35B778;
+  text-decoration: underline;
+}
+em {
+  font-style: italic;
+}
+
+/* ========================== */
+/*      Preformatted Blocks   */
+/* ========================== */
+pre {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 15px 0;
+}
+pre code {
+  background: transparent;
+  color: #222222;
+  padding: 0;
+  border-radius: 0;
+  font-family: "Courier New", monospace;
+}
+
+/* ========================== */
+/*      Main Container        */
+/* ========================== */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ========================== */
+/*      Section Styling       */
+/* ========================== */
+section {
+  margin-bottom: 100px;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 20px;
+  transition: all 0.4s ease;
+}
+section.active {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.section-content {
+  margin: 0 10px;
+}
+
+/* ========================== */
+/*   Particle Background      */
+/* ========================== */
+#particles-js {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -10;
+}
+
+/* ========================== */
+/*   Header & Burger Menu     */
+/* ========================== */
+header {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 9999;
+}
+.burger {
+  width: 30px;
+  height: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.burger span {
+  display: block;
+  height: 4px;
+  background: #444444;
+  border-radius: 2px;
+}
+
+/* ========================== */
+/*  Navigation (Sidebar)      */
+/* ========================== */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateX(-270px);
+  transition: transform 0.3s ease;
+  padding: 60px 20px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+nav.show {
+  transform: translateX(0);
+}
+.nav-menu {
+  list-style: none;
+}
+.nav-menu li {
+  margin-bottom: 15px;
+}
+.nav-menu a {
+  color: #33638D;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.nav-menu a:hover {
+  color: #35B778;
+  text-decoration: underline;
+}
+
+/* ========================== */
+/*    Page Title (Centered)   */
+/* ========================== */
+h1 {
+  margin-top: 120px;
+  color: #21918C;
+  text-align: center;
+  font-size: 2.4rem;
+}
+
+/* ========================== */
+/*    Tetris Container Layout */
+/* ========================== */
+#tetris-game .container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+}
+#tetris-game .board {
+  flex: 0 0 auto;
+}
+#tetris-game .sidebar {
+  flex: 0 0 auto;
+  min-width: 200px;
+  max-width: 280px;
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+}
+#tetrisCanvas {
+  background: #ffffff;
+  border: 2px solid #33638D;
+  display: block;
+}
+#tetris-game {
+  background: #33638D;
+  padding: 20px;
+}
+
+/* ========================== */
+/*    Candidate Moves List    */
+/* ========================== */
+#candidateList {
+  margin-top: 10px;
+}
+.candidate {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 5px;
+  padding: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.candidate:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+.controls button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: #35B778;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #ffffff;
+}
+.controls button:hover {
+  background: #6DCD59;
+}
+
+/* ========================== */
+/*     Collapsible Details    */
+/* ========================== */
+details {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 10px;
+  border-radius: 5px;
+  margin: 20px 0;
+}
+details summary {
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #440154;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary:before {
+  content: '► ';
+  color: #B8DE29;
+}
+details[open] summary:before {
+  content: '▼ ';
+  color: #B8DE29;
+}
+
+/* ========================== */
+/*    Reference Lists Style   */
+/* ========================== */
+.references {
+  margin-top: 25px;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 10px;
+  border-radius: 5px;
+}
+.references h3 {
+  margin-bottom: 10px;
+  color: #33638D;
+}
+.references ul, .references ol {
+  margin-left: 20px;
+}
+.references li {
+  margin-bottom: 5px;
+  line-height: 1.4;
+  color: #222222;
+}
+
+/* ========================== */
+/*   Comparison/Chart Layout  */
+/* ========================== */
+#comparisonChart {
+  display: flex;
+  justify-content: center;
+  gap: 8px;                 /* shrink gap from 20px → 8px */
+  flex-wrap: wrap;          /* allow wrapping on very narrow screens */
+}
+
+/* Ensure each child SVG can grow but never overflow */
+#comparisonChart > svg {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+/* ========================== */
+/*      Footer Styling        */
+/* ========================== */
+footer {
+  text-align: center;
+  padding: 20px 0;
+  margin-top: 40px;
+  background: rgba(0, 0, 0, 0.02);
+  border-top: 1px solid #CCCCCC;
+}
+
+/* ========================== */
+/*   Dark-Mode/KaTeX Overrides */
+/* ========================== */
+html, body {
+  background: #ffffff;
+  color: #222222;
+}
+.katex, .katex-html, .katex-display {
+  color: inherit !important;
+}
+.katex-display {
+  margin: 1em auto;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  max-width: 95%;
+}
+.katex .frac-line,
+.katex .sqrt-line {
+  border-color: #444444 !important;
+}
+.katex-html .tag {
+  background: #f3f3f3 !important;
+  color: #33638D !important;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+/* ========================== */
+/*    Header & Burger Updates */
+/* ========================== */
+header {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 99999;
+}
+.burger {
+  width: 30px;
+  height: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+/* ========================== */
+/*      Layout Adjustments    */
+/* ========================== */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+main {
+  flex: 1;
+}
+footer {
+  flex-shrink: 0;
+}
+
+/* Hide default summary markers across browsers */
+details > summary {
+  list-style: none !important;
+}
+details > summary::-webkit-details-marker {
+  display: none !important;
+}
+details > summary::marker {
+  content: none !important;
+  display: none !important;
+}
+
+/* Inject custom arrows for summary */
+details > summary::before {
+  content: '► ' !important;
+  color: #B8DE29 !important;
+}
+details[open] > summary::before {
+  content: '▼ ' !important;
+  color: #B8DE29 !important;
+}
+
+/* ========================== */
+/*   Center the SVG elements  */
+/* ========================== */
+#flowConservationContainer {
+  text-align: center;
+}
+#flowConservationSVG {
+  display: block;
+  margin: 0 auto;
+}
+#moleculeFlowContainer {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  text-align: center;
+}
+#moleculeFlowSVG {
+  display: block;
+  margin: 0 auto;
+}
+
+/* ========================== */
+/*  Force SVGs/Canvases/Imgs  */
+/*      to Never Overflow     */
+/* ========================== */
+/* Override inline width/height attributes */
+svg,
+canvas,
+img {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+/* ========================== */
+/*   Mobile Responsiveness    */
+/* ========================== */
+@media (max-width: 768px) {
+  /* Sidebar full-width overlay */
+  nav {
+    width: 100%;
+    transform: translateX(-100%);
+    padding: 60px 10px;
+  }
+  nav.show {
+    transform: translateX(0);
+  }
+  .nav-menu a {
+    font-size: 1.1rem;
+  }
+
+  /* Burger adjustments */
+  .burger {
+    width: 28px;
+    height: 20px;
+  }
+  .burger span {
+    height: 3px;
+  }
+
+  /* Title adjustments */
+  h1 {
+    font-size: 1.6rem;
+    margin-top: 100px;
+  }
+
+  /* Main padding */
+  main {
+    padding: 20px 10px;
+  }
+
+  /* Section padding */
+  section {
+    margin-bottom: 60px;
+    padding: 15px;
+  }
+  .section-content {
+    margin: 0 5px;
+  }
+
+  /* Heading sizes */
+  h2 {
+    font-size: 1.3rem;
+    margin-top: 30px;
+  }
+  h3, h4, h5, h6 {
+    font-size: 1.1rem;
+  }
+
+  /* Tetris layout stacks */
+  #tetris-game .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  #tetris-game .board,
+  #tetris-game .sidebar {
+    width: 100%;
+    max-width: none;
+  }
+  #tetris-game .board {
+    height: auto;
+  }
+  #tetrisCanvas,
+  #tetrisBgCanvas {
+    width: 100%;
+    height: auto;
+    max-width: 300px;
+  }
+  .sidebar {
+    margin-top: 10px;
+    padding: 10px;
+  }
+
+  /* Candidate list adjustments */
+  .candidate {
+    padding: 6px;
+    margin: 4px 0;
+  }
+  .candidate h3 {
+    font-size: 1rem;
+  }
+  .candidate p {
+    font-size: 0.9rem;
+  }
+  .controls button {
+    width: 100%;
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+
+  /* Details full-width */
+  details {
+    padding: 8px;
+  }
+  details summary {
+    font-size: 1rem;
+  }
+
+  /* Comparison chart and molecule flow */
+  #comparisonChart {
+    flex-direction: column;
+    gap: 0;
+  }
+  #comparisonChart > * {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 200px;
+  }
+  #moleculeFlowContainer {
+    width: 100%;
+    padding: 0;
+  }
+  #moleculeFlowSVG {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* KaTeX adjustments */
+  .katex-display {
+    font-size: 1rem;
+    margin: 0.5em 0;
+  }
+
+  /* Reference list adjustments */
+  .references {
+    margin-top: 20px;
+    padding: 8px;
+  }
+  .references h3 {
+    font-size: 1.1rem;
+  }
+  .references li {
+    font-size: 0.9rem;
+  }
+
+  /* Footer padding */
+  footer {
+    padding: 15px 5px;
+  }
+}
+
+/* ========================== */
+/*   Very Small Screens (<480px)  */
+/* ========================== */
+@media (max-width: 480px) {
+  /* Further text shrink */
+  h1 {
+    font-size: 1.4rem;
+    margin-top: 80px;
+  }
+  h2 {
+    font-size: 1.2rem;
+  }
+  p, li, .candidate p {
+    font-size: 0.85rem;
+  }
+  .nav-menu a {
+    font-size: 1rem;
+  }
+
+  /* Padding adjustments */
+  main {
+    padding: 15px 8px;
+  }
+  section {
+    padding: 12px;
+    margin-bottom: 50px;
+  }
+
+  /* Tetris canvas even smaller */
+  #tetrisCanvas,
+  #tetrisBgCanvas {
+    max-width: 260px;
+  }
+
+  /* Buttons adjustments */
+  .controls button {
+    padding: 6px;
+    font-size: 0.85rem;
+  }
+}
