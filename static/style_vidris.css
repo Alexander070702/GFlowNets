@@ -478,16 +478,6 @@ details[open] > summary::before {
   display: block;
   margin: 0 auto;
 }
-#moleculeFlowContainer {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
-  text-align: center;
-}
-#moleculeFlowSVG {
-  display: block;
-  margin: 0 auto;
-}
 
 /* ========================== */
 /*  Force SVGs/Canvases/Imgs  */
@@ -608,24 +598,6 @@ img {
     font-size: 1rem;
   }
 
-  /* Comparison chart and molecule flow */
-  #comparisonChart {
-    flex-direction: column;
-    gap: 0;
-  }
-  #comparisonChart > * {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 200px;
-  }
-  #moleculeFlowContainer {
-    width: 100%;
-    padding: 0;
-  }
-  #moleculeFlowSVG {
-    width: 100% !important;
-    height: auto !important;
-  }
 
   /* KaTeX adjustments */
   .katex-display {

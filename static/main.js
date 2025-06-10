@@ -1216,4 +1216,3 @@ function init() {
 // LAUNCH
 //-----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", init);
-
