@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- D3 + plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+
+  <!-- RDKit -->
+  <script src="https://cdn.jsdelivr.net/npm/@rdkit/rdkit@2025.3.2-1.0.0/dist/RDKit_minimal.js"></script>
+
+  <!-- your external script -->
+  <script src="static/molecule_flow.js"></script>
   <meta charset="UTF-8">
   <title>Understanding Generative Flow Networks (GFlowNets) – A User perspective</title>
   <!-- Load Dagre first -->
@@ -14,11 +22,33 @@
         integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"
         onload="renderMathInElement(document.body);"></script>
 
-        <script src="https://d3js.org/d3.v7.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@rdkit/rdkit@2025.3.2-1.0.0/dist/RDKit_minimal.js"></script>
+<script>
+  window.initRDKitModule()
+    .then(function (RDKit) {
+      console.log("RDKit version: " + RDKit.version());
+      window.RDKit = RDKit;  // RDKit-Modul global verfügbar machen
+      // ... weitere Initialisierung oder Aufrufe ...
+    })
+    .catch(function(err) {
+      console.error("RDKit konnte nicht geladen werden:", err);
+    })
+</script>
+    <script src="static/flow_conservation.js" defer></script>
 
 
 <style>
+      body { margin: 0; font-family: sans-serif; }
+    svg { display: block; margin: auto; background: #f9f9f9; }
+    .link {
+      fill: none;
+      stroke: #000;
+      stroke-width: 1px;
+      stroke-linecap: round;
+      marker-end: url(#arrow);
+    }
+    marker path { fill: #000; }
 /* ========================== */
 /*      Sidebar Navigation    */
 /* ========================== */
@@ -79,6 +109,94 @@ details > summary {
   font-weight: bold;
   color: #440154;
 }
+   /* Flex container instead of grid */
+    #weights {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem;
+      background: #fafafa;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+
+    /* Each control takes at least 200px, can grow */
+    .weight-control {
+      flex: 1 1 200px;
+      display: flex;
+      flex-direction: column;
+      font-family: sans-serif;
+    }
+
+    /* Prevent wrapping of the label text */
+    .weight-control label {
+      white-space: nowrap;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+      color: #333;
+    }
+
+    .slider-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Base slider styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #ddd;
+      outline: none;
+      margin: 0;
+      --pct: 50%;
+    }
+
+    /* Filled-track effect (only WebKit) */
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(
+        to right,
+        #3b82f6 0%,
+        #3b82f6 var(--pct),
+        #ddd var(--pct),
+        #ddd 100%
+      );
+    }
+
+    /* Thumb */
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #3b82f6;
+      margin-top: -5px;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #3b82f6;
+      cursor: pointer;
+    }
+
+    /* Value bubble */
+    .value {
+      width: 2.5em;
+      text-align: right;
+      font-size: 0.85rem;
+      color: #555;
+      margin-left: 0.5rem;
+      white-space: nowrap;
+    }
 
 /* ========================== */
 /*        Global Reset        */
@@ -284,11 +402,11 @@ h1 {
 }
 #tetrisCanvas {
   background: #ffffff;
-  border: 2px solid #33638D;
+  border: 2px solid white;
   display: block;
 }
 #tetris-game {
-  background: #33638D;
+  background: white;
   padding: 20px;
 }
 
@@ -498,17 +616,14 @@ details[open] > summary::before {
   display: block;
   margin: 0 auto;
 }
-#moleculeFlowContainer {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
-  text-align: center;
-}
-#moleculeFlowSVG {
-  display: block;
-  margin: 0 auto;
-}
-
+    #moleculeFlowSVG line {
+      stroke: #000 !important;
+      stroke-width: 2px !important;
+    }
+    /* the arrow path inside the marker */
+    #moleculeFlowSVG marker path {
+      fill: #000 !important;
+    }
 /* ========================== */
 /*  Force SVGs/Canvases/Imgs  */
 /*      to Never Overflow     */
@@ -638,14 +753,7 @@ img {
     height: auto !important;
     min-height: 200px;
   }
-  #moleculeFlowContainer {
-    width: 100%;
-    padding: 0;
-  }
-  #moleculeFlowSVG {
-    width: 100% !important;
-    height: auto !important;
-  }
+
 
   /* KaTeX adjustments */
   .katex-display {
@@ -739,7 +847,7 @@ img {
     <li><a href="#tetris-demo">2. Tetris GFlowNet Demo</a></li>
     <li><a href="#motivation">3. Understanding GFlowNets</a></li>
     <li><a href="#theory">4. Core Concepts</a></li>
-    <li><a href="#advanced-math">5. Advanced Math</a></li>
+
   </ul>
 </nav>
 
@@ -954,12 +1062,29 @@ img {
     <div id="flowConservationContainer">
       <svg id="flowConservationSVG"></svg>
     </div>
-    <script src="/static/flow_conservation.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        initFlowConservationDemo();
-      });
-    </script>
+    <script src="/static/flow_conservation.js">
+      particlesJS("particles-js", {
+  particles: {
+    number: { value: 30, density: { enable: true, value_area: 600 } },
+    color: { value: "#00bfff" },
+    shape: { type: "circle" },
+    opacity: { value: 0.4, random: true },
+    size: { value: 2, random: true },
+    line_linked: { enable: false },
+    move: {
+      enable: true,
+      speed: 1,
+      straight: true,
+      random: false,
+      out_mode: "out"
+    }
+  },
+  interactivity: {
+    detect_on: "canvas",
+    events: { onhover: { enable: false }, onclick: { enable: false } }
+  },
+  retina_detect: false
+});
 
   
       <div class="references">
@@ -1012,38 +1137,47 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
       one single candidate; they encourage multiple promising solutions. That diversity can be crucial when 
       searching large spaces, such as all possible molecules you might want to synthesize and test.
     </p>
-    
-    <!-- BIG DAG in #moleculeFlowSVG (molecule_flow.js) -->
-    <div id="moleculeFlowContainer">
-      <svg id="moleculeFlowSVG" width="1000" height="600"></svg>
-      <div
-        id="flowTooltipBig"
-        style="position:absolute; background:#333; color:#fff; padding:6px;
-               border-radius:4px; pointer-events:none; opacity:0;"
-      >
-      </div>
-    </div>
+<div id="weights">
+  <label>
+    Weight:
+    <input type="range" id="w-mw"    min="0" max="1" step="0.01" value="0.5">
+    <span id="w-mw-val">0.50</span>
+  </label>
+  <label>
+    Hydrophobicity:
+    <input type="range" id="w-logP"  min="0" max="1" step="0.01" value="0.5">
+    <span id="w-logP-val">0.50</span>
+  </label>
+  <label>
+    Donors:
+    <input type="range" id="w-hbd"   min="0" max="1" step="0.01" value="0.5">
+    <span id="w-hbd-val">0.50</span>
+  </label>
+  <label>
+    Acceptors:
+    <input type="range" id="w-hba"   min="0" max="1" step="0.01" value="0.5">
+    <span id="w-hba-val">0.50</span>
+  </label>
+  <label>
+    Polarity:
+    <input type="range" id="w-tpsa"  min="0" max="1" step="0.01" value="0.5">
+    <span id="w-tpsa-val">0.50</span>
+  </label>
+  <label>
+    Flexibility:
+    <input type="range" id="w-rotb"  min="0" max="1" step="0.01" value="0.5">
+    <span id="w-rotb-val">0.50</span>
+  </label>
+</div>
 
-    <style>
-      #moleculeFlowContainer {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0;
-        text-align: center;
-      }
+     <!-- container for the chart -->
+  <svg id="chart"></svg>
 
-      #moleculeFlowSVG {
-        display: block;
-        margin: 0 auto;
-      }
-    </style>
-
-    <script src="static/molecule_flow.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        initMoleculeFlowDemo();
-      });
-    </script>
+  <!-- call the initializer -->
+  <script>
+    // once all scripts are loaded, kick off the rendering
+    initMoleculeFlow('#chart');
+  </script>
 
 
       <br>
@@ -1056,19 +1190,7 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
       <p>
  This two-stage layout makes it easy to see which general structures the model prefers, while still keeping lower-probability options in view.
       </p>
-            <!-- Insert the bar-chart image here -->
-<div style="margin: 20px 0;">
-  <img
-    src="molecules/percentage.png"
-    alt="Terminal-molecule flow percentages"
-    style="display: block;
-           margin: 0 auto;
-           max-width: 100%;
-           height: auto;
-           border: 1px solid #ccc;
-           border-radius: 4px;"
-  />
-</div>
+
 
 
     
@@ -1154,103 +1276,6 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
   </div>
 </section>
 
-<section id="advanced-math">
-  <div class="section-content">
-    <h2>5. Advanced Math</h2>
-    <p>
-      Below are expansions with more formal definitions, training objectives like 
-      Trajectory Balance, Flow Matching, Detailed Balance and references to the 
-      original derivations. Expand any if you want the rigorous details.
-    </p>
-
-    <!-- Flow Formulas & Probability Calculation -->
-    <details>
-      <summary>Flow Formulas &amp; Probability Calculation</summary>
-      <p>
-        Let $F(s \to s')$ be the flow from state $s$ to state $s'$.  
-        In a non-terminal state $s$:
-      </p>
-      <!-- Display mode equation with double $$ -->
-      $$\sum_{\text{children of } s} F\bigl(s \to s_{\text{child}}\bigr) 
-        \;=\; 
-        \sum_{\text{parents of } s} F\bigl(s_{\text{parent}} \to s\bigr).$$
-
-      <p>
-        For a terminal state $x$, the total inflow equals its reward:  
-        $$\sum_{\text{parents of } x} F(\ldots) \;=\; R(x).$$
-        Sampling $x$ with probability 
-        $$\frac{R(x)}{\sum R(x')}$$ 
-        follows if we treat each $F(s \to s')$ as unnormalized probabilities 
-        forming a policy.
-      </p>
-    </details>
-
-    <!-- Trajectory Balance (TB) -->
-    <details>
-      <summary>Trajectory Balance (TB)</summary>
-      <p>
-        TB ties the forward probabilities along a trajectory to the reward $R(x)$ 
-        and the backward probabilities. Specifically, if  
-        $$\tau = (s_0 \to s_1 \to \dots \to s_n = x)$$
-        is a path to terminal $x$, TB wants:
-      </p>
-      $$\frac{P_F(\tau)}{Q(\tau)} \;=\; \frac{R(x)}{Z},$$
-
-      <p>
-        where $Q(\tau)$ is the backward or reverse path probability and $Z$ 
-        is the partition function (the sum of all $R(x)$).  
-        This elegantly ensures each trajectory’s total probability mass 
-        aligns with the reward.
-      </p>
-    </details>
-
-    <!-- Flow Matching & Detailed Balance -->
-    <details>
-      <summary>Flow Matching &amp; Detailed Balance</summary>
-      <p>
-        Flow Matching is a local constraint approach: for each state $s$, 
-        <em>incoming flow = outgoing flow</em>. Detailed Balance is a pairwise 
-        condition that ensures symmetrical consistency across edges, also leading 
-        to a consistent overall distribution.
-      </p>
-      <p>
-        Both yield solutions that sample final states in proportion to $R(x)$, but 
-        TB can handle longer trajectories more effectively, often reducing variance.
-      </p>
-    </details>
-
-    <!-- References -->
-    <div class="references">
-      <h3>Further Reading – Advanced Math</h3>
-      <ul>
-        <li>
-          <strong>[1]</strong>
-          Zimmermann, H. et al.
-          <a href="https://arxiv.org/pdf/2210.07992.pdf" target="_blank">
-            <em>A Variational Perspective on Generative Flow Networks</em>
-          </a>
-          (arXiv 2022)
-        </li>
-        <li>
-          <strong>[2]</strong>
-          Jiralerspong, M. et al.
-          <a href="https://arxiv.org/pdf/2310.02779.pdf" target="_blank">
-            <em>Expected Flow Networks in Stochastic Environments and Two-Player Zero-Sum Games</em>
-          </a>
-          (arXiv 2023)
-        </li>
-        <li>
-          <strong>[3]</strong>
-          Li, C. et al.
-          <a href="https://arxiv.org/pdf/2406.01901.pdf" target="_blank">
-            <em>Bifurcated Generative Flow Networks</em>
-          </a>
-          (arXiv 2024)
-        </li>
-      </ul>
-    </div>
-    
-</section>
 
   
 </main>
@@ -1259,9 +1284,35 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
 <footer>
   <p>&copy; 2025 – Understanding Generative Flow Networks (GFlowNets) - A User perspective</p>
 </footer>
+// <script src="https://unpkg.com/d3@6"></script>
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js">
+  particlesJS("particles-js", {
+  particles: {
+    number: { value: 30, density: { enable: true, value_area: 600 } },
+    color: { value: "#00bfff" },
+    shape: { type: "circle" },
+    opacity: { value: 0.4, random: true },
+    size: { value: 2, random: true },
+    line_linked: { enable: false },
+    move: {
+      enable: true,
+      speed: 1,
+      straight: true,
+      random: false,
+      out_mode: "out"
+    }
+  },
+  interactivity: {
+    detect_on: "canvas",
+    events: { onhover: { enable: false }, onclick: { enable: false } }
+  },
+  retina_detect: false
+});
 
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-<script src="https://d3js.org/d3.v7.min.js"></script>
+</script>
+<script src="https://d3js.org/d3.v7.min.js">
+  
+</script>
 <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
 
 
@@ -2610,4 +2661,18 @@ function updateCandidateListUI() {
     });
   </script>
   
-  
+    <script>
+    // sync bubble & track fill
+    document.querySelectorAll('#weights input[type="range"]').forEach(slider => {
+      const display = document.getElementById(slider.id + '-val');
+      const update  = () => {
+        const pct = (+slider.value * 100) + '%';
+        slider.style.setProperty('--pct', pct);
+        display.textContent = (+slider.value).toFixed(2);
+      };
+      slider.addEventListener('input', update);
+      update();
+    });
+  </script>
+
+  <script src="static/flow_conservation_sync.js"></script>
