@@ -35,6 +35,8 @@
       console.error("RDKit konnte nicht geladen werden:", err);
     })
 </script>
+  <script src="static/main.js"></script>
+
     <script src="static/flow_conservation.js" defer></script>
 
 
@@ -893,28 +895,7 @@ img {
         which path is truly the best.
       </p>
   
-      <div class="references">
-        <h3>Further Reading – Introduction</h3>
-        <ul>
-          <li>
-            <strong>[1]</strong>
-            Bengio, Y. et al. 
-            <a href="https://arxiv.org/pdf/2106.04399.pdf" target="_blank">
-              <em>Flow Network based Generative Models for Non-Iterative Diverse Candidate Generation</em>
-            </a>
-            (NeurIPS 2021)
-          </li>
-          <li>
-            <strong>[2]</strong>
-            Bengio, Y. et al.
-            <a href="https://arxiv.org/pdf/2111.09266.pdf" target="_blank">
-              <em>GFlowNet Foundations</em>
-            </a>
-            (arXiv 2021)
-          </li>
-        </ul>
-      </div>
-    </div>
+
   </section>
   
   
@@ -969,96 +950,8 @@ img {
       </div>
     </div>
   </div>
-</section>
 
-
-    <details>
-      <summary>Implementation Details</summary>
-      <p>
-        The Tetris demonstration employs a pretrained neural GFlowNet policy. Within the <code>TetrisGame</code> environment, the agent receives partial line-clearing rewards (e.g., +300 for one line up to +3000 for four lines) supplemented by a fixed survival bonus. To promote structurally coherent play, the agent is penalized in proportion to the count of board holes, the maximum column height and board bumpiness following each piece placement.
-      </p>
-      <p>
-        During training, each state–action pair is encoded into a 212-dimensional feature vector and passed through a multilayer perceptron with 512-unit hidden layers to predict unnormalized log-flow values. Trajectories are stored in a replay buffer and model parameters as well as the log-partition function <code>logZ</code> are jointly optimized using the trajectory-balance loss.
-      </p>
-      <p>
-        Upon completion of training, the resulting model weights and <code>logZ</code> are serialized into JSON for use in the front-end. The JavaScript client loads this data to instantiate a <code>NeuralFlowNet</code>, which computes log-flow values for all terminal moves, applies a softmax to yield sampling probabilities and renders the top candidate moves within the Tetris interface.
-      </p>
-    </details>
-    <details>
-      <summary>Heuristic and State-Space Reduction</summary>
-      <p>
-        To mitigate the combinatorial explosion of terminal moves, the front end applies a <em>beam-blend heuristic</em>. For each candidate terminal move, two independent metrics are computed:
-      </p>
-      <ol>
-          <strong>Flow score</strong>: The normalized log-flow output from the GFlowNet, reflecting the learned policy’s preference for the move.
-
-
-          <strong>One-step lookahead score</strong>: A depth-2 beam search estimate obtained by simulating the candidate move, sampling a single subsequent piece and selecting the highest-scoring terminal placement according to the same evaluation criteria. This provides an approximate measure of immediate downstream potential.
-
-      </ol>
-      <p>
-        Both metrics are min–max normalized to the [0,1] interval and combined via a linear mixture: <code>score = α·flow + (1−α)·beam</code>, with α empirically set to 0.7. This hybridization preserves diversity from the GFlowNet while injecting a targeted lookahead bias, effectively reducing the search space.
-      </p>
-      <p>
-        Finally, moves are categorized by line clears, net hole reduction and clean-flat outcomes. A shortlist of the top three moves is selected from the highest-scoring category and presented to the user, balancing exploration through GFlowNet sampling and exploitation via heuristic prioritization.
-      </p>
-    </details>    
-      
-  
-    <div class="references">
-      <h3>Further Reading – Tetris GFlowNet Demo</h3>
-      <ul>
-        <li>
-          <strong>[1]</strong>
-          Pan, L. et al.
-          <a href="https://arxiv.org/pdf/2302.09465.pdf" target="_blank">
-            <em>Stochastic Generative Flow Networks</em>
-          </a>
-          (arXiv 2023)
-        </li>
-        <li>
-          <strong>[2]</strong>
-          Jain, M. et al.
-          <a href="https://arxiv.org/pdf/2203.04115.pdf" target="_blank">
-            <em>Biological Sequence Design with GFlowNets</em>
-          </a>
-          (arXiv 2022)
-        </li>
-      </ul>
-    </div>
-  </section>
-  
-
-
-  <section id="motivation">
-    <div class="section-content">
-      <h2>3. Understanding GFlowNets</h2>
-      
-      <p>
-        GFlowNets learn to generate different solutions by giving each one a chance 
-        based on how “good” it is. If a solution is better (or has a higher “reward”), 
-        the GFlowNet will pick it more often. This also leaves room for other strong 
-        solutions, so you do not get stuck with just a single “winner.”
-      </p>
-  
-      <p>
-        A helpful way to picture this is to imagine water flowing through a network 
-        of pipes. Each node in the network is a partial step toward a final solution. 
-        Each edge is a possible move that sends some of the water forward. A reward 
-        acts like the size of the container at the end of each path: bigger rewards 
-        gather more water, so those solutions appear more frequently. Smaller rewards 
-        still collect some water too, which prevents them from being ignored.
-      </p>
-  
-      <p>
-        This design relies on <em>flow conservation</em>. It means any flow that enters 
-        a node must exit it along one of the available paths. Nothing is lost or created 
-        midstream. In practice, this simple rule ensures that high-reward solutions end 
-        up with more flow, yet other options receive some flow as well. The diagram below 
-        illustrates how different paths share in this flow of probability, making 
-        GFlowNets valuable for tasks that need multiple strong outcomes.
-      </p>
-      
+       
     <div id="flowConservationContainer">
       <svg id="flowConservationSVG"></svg>
     </div>
@@ -1094,29 +987,77 @@ img {
       });
     </script>
 
+</section>
+
+
+    <details>
+      <summary>Implementation Details</summary>
+      <p>
+        The Tetris demonstration employs a pretrained neural GFlowNet policy. Within the <code>TetrisGame</code> environment, the agent receives partial line-clearing rewards (e.g., +300 for one line up to +3000 for four lines) supplemented by a fixed survival bonus. To promote structurally coherent play, the agent is penalized in proportion to the count of board holes, the maximum column height and board bumpiness following each piece placement.
+      </p>
+      <p>
+        During training, each state–action pair is encoded into a 212-dimensional feature vector and passed through a multilayer perceptron with 512-unit hidden layers to predict unnormalized log-flow values. Trajectories are stored in a replay buffer and model parameters as well as the log-partition function <code>logZ</code> are jointly optimized using the trajectory-balance loss.
+      </p>
+      <p>
+        Upon completion of training, the resulting model weights and <code>logZ</code> are serialized into JSON for use in the front-end. The JavaScript client loads this data to instantiate a <code>NeuralFlowNet</code>, which computes log-flow values for all terminal moves, applies a softmax to yield sampling probabilities and renders the top candidate moves within the Tetris interface.
+      </p>
+    </details>
+    <details>
+      <summary>Heuristic and State-Space Reduction</summary>
+      <p>
+        To mitigate the combinatorial explosion of terminal moves, the front end applies a <em>beam-blend heuristic</em>. For each candidate terminal move, two independent metrics are computed:
+      </p>
+      <ol>
+          <strong>Flow score</strong>: The normalized log-flow output from the GFlowNet, reflecting the learned policy’s preference for the move.
+
+
+          <strong>One-step lookahead score</strong>: A depth-2 beam search estimate obtained by simulating the candidate move, sampling a single subsequent piece and selecting the highest-scoring terminal placement according to the same evaluation criteria. This provides an approximate measure of immediate downstream potential.
+
+      </ol>
+      <p>
+        Both metrics are min–max normalized to the [0,1] interval and combined via a linear mixture: <code>score = α·flow + (1−α)·beam</code>, with α empirically set to 0.7. This hybridization preserves diversity from the GFlowNet while injecting a targeted lookahead bias, effectively reducing the search space.
+      </p>
+      <p>
+        Finally, moves are categorized by line clears, net hole reduction and clean-flat outcomes. A shortlist of the top three moves is selected from the highest-scoring category and presented to the user, balancing exploration through GFlowNet sampling and exploitation via heuristic prioritization.
+      </p>
+    </details>    
+      
+
+  </section>
   
-      <div class="references">
-        <h3>Further Readings on GFlowNets</h3>
-        <ul>
-          <li>
-            <strong>[1]</strong>
-            Tiapkin, D. et al.
-            <a href="https://arxiv.org/pdf/2310.12934.pdf" target="_blank">
-              <em>Generative Flow Networks as Entropy-Regularized RL</em>
-            </a>
-            (arXiv 2023)
-          </li>
-          <li>
-            <strong>[2]</strong>
-            Zhang, D. et al.
-            <a href="https://arxiv.org/pdf/2209.02606.pdf" target="_blank">
-              <em>Unifying Generative Models with GFlowNets and Beyond</em>
-            </a>
-            (arXiv 2022)
-          </li>
-        </ul>
-      </div>
-    </div>
+
+
+  <section id="motivation">
+    <div class="section-content">
+      <h2>3. Understanding GFlowNets</h2>
+      
+      <p>
+        GFlowNets learn to generate different solutions by giving each one a chance 
+        based on how “good” it is. If a solution is better (or has a higher “reward”), 
+        the GFlowNet will pick it more often. This also leaves room for other strong 
+        solutions, so you do not get stuck with just a single “winner.”
+      </p>
+  
+      <p>
+        A helpful way to picture this is to imagine water flowing through a network 
+        of pipes. Each node in the network is a partial step toward a final solution. 
+        Each edge is a possible move that sends some of the water forward. A reward 
+        acts like the size of the container at the end of each path: bigger rewards 
+        gather more water, so those solutions appear more frequently. Smaller rewards 
+        still collect some water too, which prevents them from being ignored.
+      </p>
+  
+      <p>
+        This design relies on <em>flow conservation</em>. It means any flow that enters 
+        a node must exit it along one of the available paths. Nothing is lost or created 
+        midstream. In practice, this simple rule ensures that high-reward solutions end 
+        up with more flow, yet other options receive some flow as well. The diagram below 
+        illustrates how different paths share in this flow of probability, making 
+        GFlowNets valuable for tasks that need multiple strong outcomes.
+      </p>
+ 
+  
+
   </section>
   
   
@@ -1249,9 +1190,9 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
         without repeated heavy computations.
       </p>
     </details>
-
+</section>
     <div class="references">
-      <h3>Further Reading – Core Concepts & Flow Conservation</h3>
+      <h3>References</h3>
       <ul>
         <li>
           <strong>[1]</strong>
@@ -1282,7 +1223,7 @@ SECTION 4: GFlowNet Core Concepts & Flow Conservation with Molecule Visualizatio
     
 
   </div>
-</section>
+
 
 
   

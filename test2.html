@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GFlowNet DAG</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@rdkit/rdkit@2025.3.2-1.0.0/dist/RDKit_minimal.js"></script>
+  <style>
+    body { margin:0; font-family: sans-serif; }
+    svg { display:block; margin:auto; background:#f9f9f9; }
+    .link {
+      fill: none;
+      stroke: #000;
+      stroke-width: 1px;
+      stroke-linecap: round;
+      marker-end: url(#arrow);
+    }
+    .node rect {
+      fill: #fff;
+      stroke: none;
+      rx: 4px;
+      ry: 4px;
+    }
+    marker path { fill: #000; }
+  </style>
+</head>
+<body>
+  <svg id="chart" width="900" height="600"></svg>
+  <script>
+  const CFG = { width:900, height:600, nodeWidth:80, nodePadding:20, arrowSize:4, imgSize:64 };
+  const SMILES = { root:"c1ccccc1", S1:"c1cc(O)ccc1", S2:"c1cc(N)ccc1", S3:"c1cc(F)ccc1",
+    P1:"COc1ccccc1",P2:"Oc1ccc(Cl)cc1",P3:"Oc1ccc(C)cc1",P4:"Nc1ccc(Cl)cc1",P5:"Nc1ccc(C)cc1",P6:"CNc1ccccc1",
+    P7:"Brc1ccc(F)cc1",P8:"Clc1ccc(F)cc1",P9:"Cc1ccc(F)cc1" };
+  let molSvgs = {};
+  window.initRDKitModule().then(RDKit=>{
+    for(const [id,smi] of Object.entries(SMILES)){
+      const m=RDKit.get_mol(smi);
+      if(!m) continue;
+      molSvgs[id]=m.get_svg(CFG.imgSize,CFG.imgSize);
+      m.delete();
+    }
+    drawSankey();
+  });
+  function drawSankey(){
+    const nodes = Object.keys(SMILES).map(id=>({ id }));
+    const links = [
+      {source:'root', target:'S1'}, {source:'root', target:'S2'}, {source:'root', target:'S3'},
+      ...['S1','S2','S3'].flatMap((s,i)=>{ const start=1+i*3; return [0,1,2].map(j=>({source:s,target:`P${start+j}`})); })
+    ].map(l=>({ ...l, value:1 }));
+
+    const { sankey } = d3;
+    const graph = sankey()
+      .nodeId(d=>d.id)
+      .nodeWidth(CFG.nodeWidth)
+      .nodePadding(CFG.nodePadding)
+      .extent([[1,1],[CFG.width-1,CFG.height-1]])
+      ({ nodes:nodes.map(d=>({...d})), links:links.map(d=>({...d})) });
+
+    const svg=d3.select('#chart').attr('viewBox',`0 0 ${CFG.width} ${CFG.height}`);
+    svg.selectAll('*').remove();
+    // marker
+    svg.append('defs').append('marker')
+      .attr('id','arrow')
+      .attr('markerUnits','strokeWidth')
+      .attr('markerWidth',CFG.arrowSize)
+      .attr('markerHeight',CFG.arrowSize)
+      .attr('refX',CFG.arrowSize)
+      .attr('refY',CFG.arrowSize/2)
+      .attr('orient','auto')
+      .append('path')
+        .attr('d',`M0,0 L${CFG.arrowSize},${CFG.arrowSize/2} L0,${CFG.arrowSize}`)
+        .attr('fill','#000');
+
+    // straight black links
+    svg.append('g').selectAll('path').data(graph.links).enter().append('path')
+      .attr('class','link')
+      .attr('d', d=>{
+        const y0 = d.source.y0 + (d.source.y1 - d.source.y0)/2;
+        const y1 = d.target.y0 + (d.target.y1 - d.target.y0)/2;
+        return `M${d.source.x1},${y0} L${d.target.x0},${y1}`;
+      });
+
+    // nodes with boxes
+    const node=svg.append('g').selectAll('g').data(graph.nodes).enter().append('g')
+      .attr('transform',d=>`translate(${d.x0},${d.y0})`);
+    
+    node.append('foreignObject')
+      .attr('x',d=>(d.x1-d.x0-CFG.imgSize)/2)
+      .attr('y',d=>(d.y1-d.y0-CFG.imgSize)/2)
+      .attr('width',CFG.imgSize)
+      .attr('height',CFG.imgSize)
+      .html(d=>molSvgs[d.id]||`<div>${d.id}</div>`);
+  }
+  </script>
+</body>
+</html>

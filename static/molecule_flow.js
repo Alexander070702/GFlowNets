@@ -1,7 +1,7 @@
 // static/molecule_flow.js
 
 // configuration
-const CFG = {
+const CFG2 = {
   width:            900,
   height:           600,
   nodeWidth:        100,
@@ -17,8 +17,8 @@ const CFG = {
   particleDuration: 20000   // ms for full journey root→P
 };
 
-// your SMILES definitions
-const SMILES = {
+// your SMILES2 definitions
+const SMILES2 = {
   root: "c1ccccc1",
   S1:   "c1cc(O)ccc1",
   S2:   "c1cc(N)ccc1",
@@ -52,7 +52,7 @@ const NAMES = {
 };
 
 // terminal molecules
-const P_IDS = Object.keys(SMILES).filter(id => id.startsWith("P"));
+const P_IDS2 = Object.keys(SMILES2).filter(id => id.startsWith("P"));
 
 // store SVGs and descriptor values
 let molSvgs     = {};
@@ -72,7 +72,7 @@ function drawSankey(selector, rawScores) {
   const norm = normalizeScores(rawScores);
 
   // build sankey graph
-  const nodes = Object.keys(SMILES).map(id => ({ id }));
+  const nodes = Object.keys(SMILES2).map(id => ({ id }));
   const links = [
     { source: 'root', target: 'S1' },
     { source: 'root', target: 'S2' },
@@ -86,9 +86,9 @@ function drawSankey(selector, rawScores) {
   // layout
   const sankeyGen = d3.sankey()
     .nodeId(d => d.id)
-    .nodeWidth(CFG.nodeWidth)
-    .nodePadding(CFG.nodePadding)
-    .extent([[1, 1], [CFG.width - 1, CFG.height - 1]]);
+    .nodeWidth(CFG2.nodeWidth)
+    .nodePadding(CFG2.nodePadding)
+    .extent([[1, 1], [CFG2.width - 1, CFG2.height - 1]]);
   const graph = sankeyGen({
     nodes: nodes.map(d => ({ ...d })),
     links: links.map(d => ({ ...d }))
@@ -96,7 +96,7 @@ function drawSankey(selector, rawScores) {
 
   // clear & prepare svg
   const svg = d3.select(selector)
-    .attr('viewBox', `0 0 ${CFG.width} ${CFG.height}`)
+    .attr('viewBox', `0 0 ${CFG2.width} ${CFG2.height}`)
     .selectAll('*').remove() && d3.select(selector);
 
   // create/ensure tooltip
@@ -123,13 +123,13 @@ function drawSankey(selector, rawScores) {
   svg.append('defs').append('marker')
     .attr('id','arrow')
     .attr('markerUnits','strokeWidth')
-    .attr('markerWidth',CFG.arrowSize)
-    .attr('markerHeight',CFG.arrowSize)
-    .attr('refX',CFG.arrowSize)
-    .attr('refY',CFG.arrowSize/2)
+    .attr('markerWidth',CFG2.arrowSize)
+    .attr('markerHeight',CFG2.arrowSize)
+    .attr('refX',CFG2.arrowSize)
+    .attr('refY',CFG2.arrowSize/2)
     .attr('orient','auto')
     .append('path')
-      .attr('d',`M0,0 L${CFG.arrowSize},${CFG.arrowSize/2} L0,${CFG.arrowSize}`)
+      .attr('d',`M0,0 L${CFG2.arrowSize},${CFG2.arrowSize/2} L0,${CFG2.arrowSize}`)
       .attr('fill','#000');
 
   // draw links
@@ -151,38 +151,38 @@ function drawSankey(selector, rawScores) {
 
   // molecule icons
   node.append('foreignObject')
-    .attr('x', d => (d.x1 - d.x0 - CFG.imgSize) / 2)
-    .attr('y', d => (d.y1 - d.y0 - CFG.imgSize) / 2 - CFG.barHeight)
-    .attr('width', CFG.imgSize)
-    .attr('height', CFG.imgSize)
+    .attr('x', d => (d.x1 - d.x0 - CFG2.imgSize) / 2)
+    .attr('y', d => (d.y1 - d.y0 - CFG2.imgSize) / 2 - CFG2.barHeight)
+    .attr('width', CFG2.imgSize)
+    .attr('height', CFG2.imgSize)
     .html(d => molSvgs[d.id] || `<div>${d.id}</div>`);
 
   // performance bars for P nodes
   node.filter(d => d.id.startsWith('P'))
     .each(function(d) {
       const pct = norm[d.id] || 0;
-      const barX = (CFG.nodeWidth - CFG.barMaxWidth) / 2;
-      const barY = ((d.y1 - d.y0) - CFG.barHeight) - CFG.barPadding;
+      const barX = (CFG2.nodeWidth - CFG2.barMaxWidth) / 2;
+      const barY = ((d.y1 - d.y0) - CFG2.barHeight) - CFG2.barPadding;
       const g = d3.select(this).append('g')
         .attr('transform', `translate(${barX},${barY})`);
       g.append('rect')
-        .attr('width', CFG.barMaxWidth)
-        .attr('height', CFG.barHeight)
+        .attr('width', CFG2.barMaxWidth)
+        .attr('height', CFG2.barHeight)
         .attr('fill', '#eee');
       g.append('rect')
-        .attr('width', CFG.barMaxWidth * pct)
-        .attr('height', CFG.barHeight)
+        .attr('width', CFG2.barMaxWidth * pct)
+        .attr('height', CFG2.barHeight)
         .attr('fill', '#3b82f6');
       g.append('text')
-        .attr('x', CFG.barMaxWidth/2)
-        .attr('y', CFG.barHeight/2)
+        .attr('x', CFG2.barMaxWidth/2)
+        .attr('y', CFG2.barHeight/2)
         .attr('dy', '0.35em')
         .attr('text-anchor','middle')
         .attr('font-size','8px')
         .text(`${(pct*100).toFixed(0)}%`);
     });
 
-  // tooltip handlers on every node, no SMILES, show descriptors for all
+  // tooltip handlers on every node, no SMILES2, show descriptors for all
   node
     .on('mouseover', (event, d) => {
       const name = NAMES[d.id] || d.id;
@@ -213,7 +213,7 @@ function drawSankey(selector, rawScores) {
 
   // —— PARTICLE SYSTEM ——
   const pathsByP = {};
-  P_IDS.forEach(pid => {
+  P_IDS2.forEach(pid => {
     const first  = graph.links.find(l => l.source.id === 'root'
                    && graph.links.some(l2 => l2.source.id === l.target.id && l2.target.id === pid));
     const second = graph.links.find(l => l.source.id === first.target.id && l.target.id === pid);
@@ -230,7 +230,7 @@ function drawSankey(selector, rawScores) {
   clearInterval(window._molParticleTimer);
   window._molParticleTimer = setInterval(() => {
     if (Object.values(norm).every(v => v === 0)) return;
-    const r = Math.random(), keys = P_IDS;
+    const r = Math.random(), keys = P_IDS2;
     let cum = 0, chosen = keys[keys.length - 1];
     for (const k of keys) {
       cum += norm[k] || 0;
@@ -238,12 +238,12 @@ function drawSankey(selector, rawScores) {
     }
     const segs = pathsByP[chosen];
     const circ = particleLayer.append('circle')
-      .attr('r', CFG.particleSize)
+      .attr('r', CFG2.particleSize)
       .attr('cx', segs[0].x0)
       .attr('cy', segs[0].y0)
       .attr('fill', '#440154FF')   // Viridis yellow
       .attr('opacity', 0.8);
-    circ.transition().duration(CFG.particleDuration)
+    circ.transition().duration(CFG2.particleDuration)
       .attrTween('transform', function() {
         return t => {
           let x, y;
@@ -260,7 +260,7 @@ function drawSankey(selector, rawScores) {
         };
       })
       .remove();
-  }, CFG.particleRate);
+  }, CFG2.particleRate);
 }
 
 // compute raw scores from sliders
@@ -274,7 +274,7 @@ function computeRawScores() {
     rotb: +document.getElementById('w-rotb').value
   };
   const raw = {};
-  P_IDS.forEach(id => {
+  P_IDS2.forEach(id => {
     const d = descriptors[id];
     raw[id] =
       w.mw   * ((d.amw   - descStats.mw.min)   / descStats.mw.range) +
@@ -306,10 +306,10 @@ function updateFlow() {
 // entry
 window.initMoleculeFlow = function(selector = '#chart') {
   window.initRDKitModule().then(RDKit => {
-    Object.entries(SMILES).forEach(([id, smi]) => {
+    Object.entries(SMILES2).forEach(([id, smi]) => {
       const m = RDKit.get_mol(smi);
       if (!m) return;
-      molSvgs[id] = m.get_svg(CFG.imgSize, CFG.imgSize);
+      molSvgs[id] = m.get_svg(CFG2.imgSize, CFG2.imgSize);
       // compute and store descriptors for all nodes
       const desc = JSON.parse(m.get_descriptors());
       descriptors[id] = {
@@ -325,7 +325,7 @@ window.initMoleculeFlow = function(selector = '#chart') {
 
     // compute min/max/range for P nodes only (for normalization)
     ['amw','logP','hbd','hba','tpsa','rotb'].forEach(key => {
-      const vals = P_IDS.map(id => descriptors[id][key]);
+      const vals = P_IDS2.map(id => descriptors[id][key]);
       const min = Math.min(...vals), max = Math.max(...vals);
       descStats[key] = { min, range: (max - min) || 1 };
     });

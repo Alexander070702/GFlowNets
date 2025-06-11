@@ -106,6 +106,63 @@ const TETROMINOES = {
   ]
 };
 
+
+function makeBoardsData() {
+  // 1) Root
+  const rootBoard = game.board.map(row => row.slice());
+  const cp = game.current_piece;
+  cp.shape.forEach((row, r) =>
+    row.forEach((v, c) => {
+      if (v) rootBoard[cp.y + r][cp.x + c] = 2;
+    })
+  );
+  const root = { board: rootBoard, flow: 100 };
+
+  // 2) Actions (top 3)
+  const actions = topCandidates.map(c => {
+    const b = game.board.map(row => row.slice());
+    // overlay the candidate placement as “2”
+    c.piece.shape.forEach((row, r) =>
+      row.forEach((v, col) => {
+        if (v) b[c.piece.y + r][c.piece.x + col] = 2;
+      })
+    );
+    return {
+      board:   b,
+      spawn:   c.spawnCells,
+      landing: c.landingCells,
+      flow:    c.flow
+    };
+  });
+
+  // 3) Results
+  const results = topCandidates.map(c => {
+    const tmp = game.board.map(row => row.slice());
+    // lock in
+    c.piece.shape.forEach((row, r) =>
+      row.forEach((v, col) => {
+        if (v) tmp[c.piece.y + r][c.piece.x + col] = 1;
+      })
+    );
+    // clear lines
+    const newBoard = [];
+    for (let r = 0; r < tmp.length; r++) {
+      if (!tmp[r].every(cell => cell === 1)) newBoard.push(tmp[r]);
+    }
+    const cleared = ROWS - newBoard.length;
+    for (let i = 0; i < cleared; i++) {
+      newBoard.unshift(new Array(COLS).fill(0));
+    }
+    const reward = cleared === 4 ? 10 : (cleared === 1 ? 2 : (cleared > 0 ? 1 : 0));
+    return { board: newBoard, reward, flow: c.flow };
+  });
+
+  return { root, actions, results };
+}
+
+/**
+
+
 //-----------------------------------------------------------------------------
 // HELPER FUNCTIONS
 //-----------------------------------------------------------------------------
@@ -687,7 +744,7 @@ class Particle {
     this.y += this.vy * dt;
     this.life -= dt * 0.4; // fade speed
   }
-
+  /*
   draw(ctx) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -700,6 +757,7 @@ class Particle {
     ctx.fillStyle = grad;
     ctx.fill();
   }
+    */
 }
 
 class Arrow {
@@ -1016,7 +1074,7 @@ function spawnArrow(from, to, flow, color) {
 
 function drawEffects() {
   appliedArrows.forEach(a => a.draw(ctx));
-  particles.forEach(p => p.draw(ctx));
+  // particles.forEach(p => p.draw(ctx));
 }
 
 function draw() {
@@ -1070,25 +1128,51 @@ function animate() {
 // GAME FLOW & EVENT HANDLERS
 //-----------------------------------------------------------------------------
 
+/**
+ * Fetch, process, and display the top-3 candidate moves,
+ * then redraw the flow DAG with those three in flow_conservation.js.
+ */
 function fetchCandidateMoves() {
   if (simulationPaused) return;
 
-  let data = getCandidateMoves();
-  currentGameState = data.game_state || {};
+  const data = getCandidateMoves();
+  currentGameState   = data.game_state   || {};
   currentPieceCenter = data.current_piece_center || { x:0, y:0 };
-  candidateMoves = data.terminal_moves || [];
+  candidateMoves     = data.terminal_moves     || [];
 
+  // 1) Sort by descending flow
   candidateMoves.sort((a, b) => b.flow - a.flow);
+
+  // 2) Compute spawnCells + landingCells for each candidate
+  candidateMoves.forEach(c => {
+    c.spawnCells = [];
+    c.landingCells = [];
+    // spawn at y=0 shape
+    c.piece.shape.forEach((row, r) =>
+      row.forEach((v, col) => {
+        if (v) c.spawnCells.push([r, c.piece.x + col]);
+      })
+    );
+    // landing at final y
+    c.piece.shape.forEach((row, r) =>
+      row.forEach((v, col) => {
+        if (v) c.landingCells.push([c.piece.y + r, c.piece.x + col]);
+      })
+    );
+  });
+
+  // 3) Take top 3
   topCandidates = candidateMoves.slice(0, 3);
   assignCandidateColors(topCandidates);
-
   updateCandidateListUI();
 
-  // Auto-click the first candidate to move the piece
+  // 4) Redraw the DAG with all three actions
+  const boardsData = makeBoardsData();
+  initFlowConservationDemo(boardsData);
+
+  // 5) Auto-click the first candidate as before
   const firstCandidateEl = candidateListEl.querySelector(".candidate");
-  if (firstCandidateEl) {
-    firstCandidateEl.click();
-  }
+  if (firstCandidateEl) firstCandidateEl.click();
 }
 
 function doSelectCandidate(actionKey) {
@@ -1194,12 +1278,17 @@ function init() {
       return response.json();
     })
     .then(data => {
-      agent.loadFromJSON(data);
-      console.log("Loaded pretrained flows from pretrained_flows_tb.json");
-      // Start the game loop
-      setInterval(gameTick, TICK_INTERVAL);
-      fetchCandidateMoves();
+    agent.loadFromJSON(data);
+    console.log("Loaded pretrained flows…");
+
+    // ← here, guaranteed that log_flows exist & D3 is loaded
+    drawDag();
+    // animateDagParticles();
+
+    setInterval(gameTick, TICK_INTERVAL);
+    fetchCandidateMoves();
     })
+
     .catch(err => {
       console.warn("Could not load pretrained flows:", err);
       // Even if we fail, we can still run the game with random flows
@@ -1211,6 +1300,125 @@ function init() {
 
   requestAnimationFrame(animate);
 }
+
+// ─── DAG CONFIG ─────────────────────────────────────────────────────────────
+/* const DAG_CFG = {
+  width:  900,
+  height: 600,
+  particleRate: 300  // ms between particle spawns
+};
+*/ 
+// ─── BUILD DAG DATA ──────────────────────────────────────────────────────────
+function buildDagData(logFlows) {
+  const nodes = new Set();
+  const links = [];
+  for (let [stateKey, actions] of Object.entries(logFlows)) {
+    nodes.add(stateKey);
+    for (let actionKey of Object.keys(actions)) {
+      const targetKey = simulateStateTransition(stateKey, actionKey);
+      nodes.add(targetKey);
+      links.push({
+        source: stateKey,
+        target: targetKey,
+        flow: Math.exp(actions[actionKey])
+      });
+    }
+  }
+  return {
+    nodes: Array.from(nodes).map(id => ({ id })),
+    links
+  };
+}
+
+// ─── SIMULATE STATE TRANSITION ───────────────────────────────────────────────
+function simulateStateTransition(stateKey, actionKey) {
+  const st = JSON.parse(stateKey);
+  const [rot, x] = actionKey.slice(1).split('_x').map(Number);
+  const tmp = new TetrisGame();
+  tmp.board = st.board;
+  tmp.current_piece = st.piece;
+  // apply rotation
+  for (let i = 0; i < rot; i++) {
+    tmp.current_piece.shape = rotateMatrix(tmp.current_piece.shape);
+  }
+  tmp.current_piece.x = x;
+  // drop until collision
+  while (!tmp.collides({ ...tmp.current_piece, y: tmp.current_piece.y + 1 })) {
+    tmp.current_piece.y++;
+  }
+  return tmp.get_state_key();
+}
+
+// ─── DRAW THE DAG ────────────────────────────────────────────────────────────
+function drawDag() {
+  const svg = d3.select('#flowConservationSVG')
+                .attr('viewBox', [0, 0, DAG_CFG.width, DAG_CFG.height]);
+  const { nodes, links } = buildDagData(agent.log_flows);
+
+  // stratify + layout
+  const strat = d3.dagStratify()
+                   .id(d => d.id)
+                   .parentIds(d => links.filter(l => l.target === d.id).map(l => l.source));
+  const dag = strat(nodes);
+  d3.sugiyama()
+    .size([DAG_CFG.width, DAG_CFG.height])
+    .layering(d3.layeringLongestPath())
+    .decross(d3.decrossOpt())
+    .coord(d3.coordCenter())(dag);
+
+  // links
+  const linkSel = svg.selectAll('path.dag-link')
+                     .data(links, d => d.source + '→' + d.target);
+  linkSel.enter().append('path').attr('class','dag-link')
+         .merge(linkSel)
+         .attr('fill','none')
+         .attr('stroke','#444')
+         .attr('stroke-width', d => Math.sqrt(d.flow))
+         .attr('d', d => {
+           const s = dag.node(d.source), t = dag.node(d.target);
+           return `M${s.x},${s.y}L${t.x},${t.y}`;
+         });
+  linkSel.exit().remove();
+
+  // nodes
+  const nodeSel = svg.selectAll('g.dag-node')
+                     .data(dag.descendants(), d => d.id);
+  const nodeEnter = nodeSel.enter().append('g').attr('class','dag-node');
+  nodeEnter.append('circle').attr('r', 6).attr('fill','#888');
+  nodeEnter.append('title').text(d => d.id.slice(0,40) + '…');
+  nodeSel.merge(nodeEnter)
+         .attr('transform', d => `translate(${d.x},${d.y})`);
+  nodeSel.exit().remove();
+}
+
+// ─── PARTICLE ANIMATION ──────────────────────────────────────────────────────
+/*
+function animateDagParticles() {
+  const layer = d3.select('#flowConservationSVG').append('g').attr('class','particles');
+  const paths = d3.selectAll('path.dag-link').nodes();
+
+  setInterval(() => {
+    // choose edge by weight = stroke-width²
+    const weights = paths.map(p => Math.pow(+p.getAttribute('stroke-width'), 2));
+    let total = weights.reduce((a, b) => a + b, 0), r = Math.random() * total, idx = 0;
+    while (r > weights[idx]) { r -= weights[idx]; idx++; }
+    const edge = paths[idx], L = edge.getTotalLength();
+
+    const dot = layer.append('circle')
+                     .attr('r', 3)
+                     .attr('fill', '#f00')
+                     .attr('opacity', 1);
+
+    dot.transition().duration(2000)
+       .attrTween('transform', () => t => {
+         const p = edge.getPointAtLength(t * L);
+         return `translate(${p.x},${p.y})`;
+       })
+       .attr('opacity', 0)
+       .remove();
+  }, DAG_CFG.particleRate);
+}
+*/
 
 //-----------------------------------------------------------------------------
 // LAUNCH
